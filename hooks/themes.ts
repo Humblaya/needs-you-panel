@@ -100,8 +100,8 @@ function itemRows(
   // the age always shows; who and project give way first
   const room = c.W - leadWidth(lead)
   const meta = fit([it.who, it.project].filter(Boolean).join(' · '), room - when.length - 3) + ' · ' + when
-  rows.push(line(c.W, [...lead, S(meta, { fg: off.fg })]))
   if (sel) {
+    rows.push(line(c.W, [...lead, S(meta, { fg: off.fg })]))
     rows.push(
       line(c.W, [
         ...detailLead,
@@ -192,29 +192,34 @@ export const FOCUS_KEYS = 'alt+n: panel · esc: chat'
  * what each colour means in this look, the motion switch, and how the buttons work.
  */
 function controls(c: Ctx, accent: string, dim: string, faint: string, meanings: Meaning[]): Row[] {
-  const rows = [
-    lr(
-      c.W,
-      [
-        { btn: 'design', hotkey: 't', act: { type: 'theme' }, segs: [S('design', { fg: faint })] },
-        S('  '),
-        { btn: 'refresh', hotkey: 'r', act: { type: 'refresh' }, segs: [S('refresh', { fg: faint })] },
-      ],
-      [S(' '), { btn: 'key', hotkey: 'k', act: { type: 'key' }, segs: [S('key', { fg: faint, u: true })] }],
-    ),
-    line(c.W, [S(FOCUS_KEYS, { fg: faint })]),
+  const buttons: Seg[] = [
+    { btn: 'design', hotkey: 't', act: { type: 'theme' }, segs: [S('design', { fg: faint })] },
+    S('  '),
+    { btn: 'refresh', hotkey: 'r', act: { type: 'refresh' }, segs: [S('refresh', { fg: faint })] },
   ]
+  const key: Seg[] = [S(' '), { btn: 'key', hotkey: 'k', act: { type: 'key' }, segs: [S('key', { fg: faint, u: true })] }]
+  const width = (segs: Seg[]) => segs.reduce((n, x) => n + segWidth(x), 0)
+  // the key button never gives way: on a very narrow pane it moves to a row of its own
+  const bar = width(buttons) + width(key) <= c.W ? [lr(c.W, buttons, key)] : [line(c.W, buttons), lr(c.W, [], key)]
+  const rows = [...bar, line(c.W, [S(fit(FOCUS_KEYS, c.W), { fg: faint })])]
   if (c.isKeyOpen) {
     rows.push(line(c.W, []))
     for (const [glyph, colour, meaning] of meanings) {
       rows.push(line(c.W, [S('  '), S(glyph, { fg: colour }), S(' '), S(fit(meaning, c.W - 3 - [...glyph].length), { fg: dim })]))
     }
     rows.push(line(c.W, []))
-    rows.push(line(c.W, [S('  press a button, or its letter', { fg: accent })]))
-    rows.push(line(c.W, [S('  tab moves · enter opens an item', { fg: dim })]))
-    rows.push(line(c.W, [S('  o open · x skip · t design', { fg: faint })]))
-    rows.push(line(c.W, [S('  r refresh · k key · ', { fg: faint }), { btn: 'motion', hotkey: 'm', act: { type: 'motion' }, segs: [S(c.motion ? 'motion on' : 'motion off', { fg: dim })] }]))
-    rows.push(line(c.W, [S('  ' + FOCUS_KEYS, { fg: faint })]))
+    rows.push(line(c.W, [S(fit('  press a button, or its letter:', c.W), { fg: accent })]))
+    const sw = (k: string, what: string) => line(c.W, [S('  ' + pad(k, 6), { fg: accent, b: true }), S(fit(what, c.W - 8), { fg: dim })])
+    rows.push(sw('t', 'design: the next look'))
+    rows.push(sw('r', 'refresh: check again now'))
+    rows.push(line(c.W, [S('  ' + pad('m', 6), { fg: accent, b: true }), { btn: 'motion', hotkey: 'm', act: { type: 'motion' }, segs: [S(c.motion ? 'motion: on' : 'motion: off', { fg: dim })] }]))
+    rows.push(sw('o', 'open: show the picked item'))
+    rows.push(sw('x', 'skip: hide the picked item'))
+    rows.push(sw('k', 'key: show or hide this'))
+    rows.push(sw('tab', 'move to the next item'))
+    rows.push(sw('enter', 'open the item you are on'))
+    rows.push(sw('alt+n', 'panel (from the chat)'))
+    rows.push(sw('esc', 'chat (back to typing)'))
   }
   return rows
 }
@@ -501,8 +506,8 @@ function metro(c: Ctx): Look {
     bigSec(W, word, col, T.bg, [badge(l, col), S(' ')], info ? [S(info, { fg: C.dim })] : [], line(W, [badge(l, col), S(' ' + word, { fg: T.fg, b: true }), S(info ? '  ' + info : '', { fg: C.dim })]))
 
   rows.push(lr(W, [S(' ◉ NEEDS YOU', { bg: C.sign, fg: C.ink, b: true })], [S(narrow ? `${n} stops ` : `${n} stops · ${clock(c.now)} `, { bg: C.sign, fg: C.signDim })], ' ', { bg: C.sign }))
-  const q = W / 4
-  rows.push({ segs: [C.red, C.green, C.blue, C.grey].map(col => ({ px: Array.from({ length: q }, (): [string, string] => [col, T.bg]) })) })
+  const q = Math.floor(W / 4)
+  rows.push({ segs: [C.red, C.green, C.blue, C.grey].map((col, i) => ({ px: Array.from({ length: i === 3 ? W - 3 * q : q }, (): [string, string] => [col, T.bg]) })) })
   rows.push(line(W, []))
 
   if (n > 0) {

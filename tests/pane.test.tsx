@@ -5,6 +5,7 @@ import type { On } from 'claude-code'
 import type { Snapshot, ThemeId } from '../types'
 import type { Row } from '../hooks/cells'
 import { rowWidth } from '../hooks/cells'
+import { widthFor } from '../hooks/register'
 import { THEMES, bigWord, buildLook } from '../hooks/themes'
 
 const NOW = Date.parse('2026-01-05T12:00:00.000Z')
@@ -92,7 +93,7 @@ const ctx = (theme: ThemeId, W: number, snap: Snapshot) => ({
 })
 
 for (const theme of THEMES) {
-  for (const W of [48, 36]) {
+  for (const W of [60, 48, 36, 30, 24]) {
     test(`${theme} at ${W} columns: every row is exactly ${W} cells`, () => {
       for (const snap of [SAMPLE, EMPTY_SNAP]) {
         const look = buildLook(ctx(theme, W, snap))
@@ -167,9 +168,9 @@ test('the motion button turns motion off and stores it', async ($, on) => {
   const held = store(on)
   seed(on, { snapshot: SAMPLE, isKeyOpen: true })
   const ui = await $.ui.mount(paneAt(60))
-  expect(await ui.find({ type: 'Text', text: /^motion on$/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /^motion: on$/ })).toBeDefined()
   await ui.press({ key: 'motion' })
-  expect(await ui.find({ type: 'Text', text: /^motion off$/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /^motion: off$/ })).toBeDefined()
   expect(held.reduceMotion).toBe(true)
   await ui.unmount()
 })
@@ -245,9 +246,9 @@ for (const theme of THEMES) {
       expect(await ui.find({ type: 'Text', text: LEGEND[theme] })).toBeDefined()
       expect(await ui.find({ key: 'motion' })).toBeDefined()
       expect(await ui.find({ type: 'Text', text: /press a button, or its letter/ })).toBeDefined()
-      expect(await ui.find({ type: 'Text', text: /tab moves · enter opens/ })).toBeDefined()
-      expect(await ui.find({ type: 'Text', text: /o open · x skip/ })).toBeDefined()
-      expect(await ui.find({ type: 'Text', text: /^  alt\+n: panel · esc: chat/ })).toBeDefined()
+      expect(await ui.find({ type: 'Text', text: /move to the next item/ })).toBeDefined()
+      expect(await ui.find({ type: 'Text', text: /skip: hide the picked item/ })).toBeDefined()
+      expect(await ui.find({ type: 'Text', text: /panel \(from the chat\)/ })).toBeDefined()
       await ui.unmount()
     }
     const ui = await $.ui.mount(paneAt(60))
@@ -305,17 +306,37 @@ const rowText = (r: Row) => r.segs.map(x => ('t' in x ? x.t : 'btn' in x ? x.seg
 
 for (const theme of THEMES) {
   for (const W of [48, 36]) {
-    test(`${theme} at ${W}: items are spaced out, title and meta on their own rows`, () => {
-      const look = buildLook({ ...ctx(theme, W, SAMPLE), isDetailOpen: false, isKeyOpen: false, isSkillsOpen: false })
+    test(`${theme} at ${W}: by default an item is only its title, spaced out`, () => {
+      const look = buildLook({ ...ctx(theme, W, SAMPLE), selected: '', isDetailOpen: false, isKeyOpen: false, isSkillsOpen: false })
+      const all = look.rows.map(rowText).join('\n')
+      // no meta: who and project stay hidden, and so do the open and skip buttons
+      expect(all).not.toMatch(/guard · demo-app|Colour picker work|sample-site|Report writer/)
+      expect(all).not.toMatch(/SKIP/)
       const titles = look.rows.map((r, i) => [r, i] as const).filter(([r]) => r.press)
       expect(titles.length).toBe(4)
-      for (const [r, i] of titles) {
-        // the title row holds no age; the meta row under it does
-        expect(/ (now|\d+m)$/.test(rowText(r).trimEnd())).toBe(false)
-        expect(rowText(look.rows[i + 1]!)).toMatch(/· (now|\d+m)/)
-      }
       // a spacer row between items: nothing but blanks and rails
       for (const [, i] of titles.slice(1)) expect(rowText(look.rows[i - 1]!).replace(/[ ┃]/g, '')).toBe('')
+    })
+
+    test(`${theme} at ${W}: the picked item shows its meta, its open and skip row, and (opened) its details`, () => {
+      const pick = { ...ctx(theme, W, SAMPLE), selected: 'ask:s1:q1', isKeyOpen: false, isSkillsOpen: false }
+      const closed = buildLook({ ...pick, isDetailOpen: false })
+      const at = closed.rows.findIndex(r => r.press?.key === 'item:ask:s1:q1')
+      expect(rowText(closed.rows[at + 1]!)).toMatch(/· 2m/)
+      expect(rowText(closed.rows[at + 2]!)).toMatch(/OPEN.*SKIP/)
+      expect(closed.rows.map(rowText).join('\n')).not.toMatch(/• Blue/)
+      // the other items still show only their titles
+      expect(closed.rows.map(rowText).join('\n')).not.toMatch(/sample-site/)
+      const opened = buildLook({ ...pick, isDetailOpen: true })
+      expect(opened.rows.map(rowText).join('\n')).toMatch(/• Blue/)
+    })
+
+    test(`${theme} at ${W}: the key lists every switch`, () => {
+      const look = buildLook({ ...ctx(theme, W, SAMPLE), isKeyOpen: true })
+      const all = look.rows.map(rowText).join('\n')
+      for (const want of [/t +design/, /r +refresh/, /m +motion/, /o +open/, /x +skip/, /k +key/, /tab +move/, /enter +open/, /alt\+n +panel/, /esc +chat/]) {
+        expect(all).toMatch(want)
+      }
     })
 
     test(`${theme} at ${W}: the bottom bar holds small design and refresh buttons, the key, and the alt+n hint`, () => {
@@ -384,4 +405,21 @@ test('big letters are two rows tall and three cells wide', () => {
     // 3 cells a letter, 1 between letters of a word, 2 for a space
     expect(rows[0]!.px.length).toBe(letters * 3 + (letters - 1 - spaces) + spaces * 2)
   }
+})
+
+for (const cols of [24, 30, 80]) {
+  test(`at a ${cols}-column pane the design, refresh and key buttons are all drawn and the key opens`, async ($, on) => {
+    const held = store(on)
+    seed(on, { snapshot: SAMPLE, reduceMotion: true })
+    const ui = await $.ui.mount(paneAt(cols))
+    for (const key of ['design', 'refresh', 'key']) expect(await ui.find({ key })).toBeDefined()
+    await ui.press({ key: 'key' })
+    expect(held.keyOpen).toBe(true)
+    expect(await ui.find({ type: 'Text', text: /skip: hide/ })).toBeDefined()
+    await ui.unmount()
+  })
+}
+
+test('the drawing fills the pane between 24 and 64 columns', () => {
+  expect([10, 24, 30, 36, 47, 48, 60, 64, 100].map(widthFor)).toEqual([24, 24, 30, 36, 47, 48, 60, 64, 64])
 })

@@ -50,6 +50,9 @@ const NODE_TAIL =
   "const s=fs.fstatSync(fd).size;const l=Math.min(s,+n);const b=Buffer.alloc(l);" +
   'fs.readSync(fd,b,0,l,s-l);process.stdout.write(b)'
 
+/** The drawing fills the pane: the 36-column layout below 48, never under 24 or over 64 cells. */
+export const widthFor = (columns: number) => Math.max(24, Math.min(64, Math.floor(columns)))
+
 const isTheme = (v: unknown): v is ThemeId => typeof v === 'string' && (THEMES as string[]).includes(v)
 
 // Module state: rebuilt after a reload, which is fine, as it is only a cache.
@@ -73,7 +76,7 @@ const transcripts = new Map<string, { mtimeMs: number; size: number; readAt: num
 const logs = new Map<string, { mtimeMs: number; text: string }>()
 
 async function openPane($: $, focus: boolean) {
-  return $.ui.open({ id: PANE, title: TITLE, backgroundColor: backgroundOf(await read($, theme)), ...(focus ? { focus: true } : {}) })
+  return $.ui.open({ id: PANE, title: TITLE, columns: 48, backgroundColor: backgroundOf(await read($, theme)), ...(focus ? { focus: true } : {}) })
 }
 
 async function claudeRoot($: $) {
@@ -321,7 +324,7 @@ export const register: Register = on => {
     const t = await read($, theme)
     const still = await read($, reduceMotion)
     const look = buildLook({
-      W: e.props.bodyColumns >= 48 ? 48 : 36,
+      W: widthFor(e.props.bodyColumns),
       narrow: e.props.bodyColumns < 48,
       snap: await read($, snapshot),
       selected: await read($, selected),

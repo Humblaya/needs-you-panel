@@ -27,16 +27,12 @@ Every item is a level to clear; an empty list says **STAGE CLEAR**.
     █▀▄ ██▀ ██▀ █▀▄ ▄▀▀  █ █ ▄▀▄ █ █
  1  █ █ █▄▄ █▄▄ █▄▀ ▄▄▀   █  ▀▄▀ █▄█           4
    APPROVE  This push goes to main.
-            guard · demo-app · now
 
    ASKS     Which colour should the button be?
-            Colour picker work · demo-app · 2m
 
    FAILED   Bash failed
-            Test run · sample-site · 5m
 
    DONE     The report is ready.
-            Report writer · notes · 18m
 
     █▀▄ ██▀ ▄▀▄ █▀▄ █ █
  2  █▀▄ █▄▄ █▀█ █▄▀  █        3 open, not merged
@@ -70,16 +66,12 @@ Corner brackets, a reticle and a threat meter that fills with each waiting item;
   █▀▄ ██▀ ██▀ █▀▄ ▄▀▀  █ █ ▄▀▄ █ █
 ▸ █ █ █▄▄ █▄▄ █▄▀ ▄▄▀   █  ▀▄▀ █▄█          [04]
  ◉ APPROVE  This push goes to main.
-  └ guard · demo-app · now
 
  ◉ ASKS     Which colour should the button be?
-  └ Colour picker work · demo-app · 2m
 
  ◉ FAILED   Bash failed
-  └ Test run · sample-site · 5m
 
  ○ DONE     The report is ready.
-  └ Report writer · notes · 18m
 
   █▀▄ ██▀ ▄▀▄ █▀▄ █ █
 ▸ █▀▄ █▄▄ █▀█ █▄▀  █                        [03]
@@ -115,16 +107,12 @@ Each section is a coloured line, each item a stop, and running agents are a trai
     █▀▄ ██▀ ██▀ █▀▄ ▄▀▀  █ █ ▄▀▄ █ █
  N  █ █ █▄▄ █▄▄ █▄▀ ▄▄▀   █  ▀▄▀ █▄█     4 stops
  ●  This push goes to main.
- ┃  guard · demo-app · now
  ┃
  ●  Which colour should the button be?
- ┃  Colour picker work · demo-app · 2m
  ┃
  ×  Bash failed
- ┃  Test run · sample-site · 5m
  ┃
  ○  The report is ready.
- ╹  Report writer · notes · 18m
 
     █▀▄ ██▀ ▄▀▄ █▀▄ █ █
  R  █▀▄ █▄▄ █▀█ █▄▀  █                not merged
@@ -158,16 +146,12 @@ NEEDS YOU  core 4°         hot 4  warm 3  cool 2
 █▄█ ▄▀▄ ▀█▀
 █ █ ▀▄▀  █                          needs you  4
 ██ approve  This push goes to main.
-██          guard · demo-app · now
 
 ██ asks     Which colour should the button be?
-██          Colour picker work · demo-app · 2m
 
 ██ failed   Bash failed
-██          Test run · sample-site · 5m
 
 ██ done     The report is ready.
-██          Report writer · notes · 18m
 
 █ █ ▄▀▄ █▀▄ ███
 ███ █▀█ █▀▄ █ █             ready, not merged  3
@@ -210,9 +194,9 @@ In the desktop app, where `/plugin` does not run: click + next to the prompt box
 
 - The pane opens by itself beside the chat when the terminal is wide enough (Claude Code docks it in fullscreen mode). Type `/needs-you` to open it at any width and give it the keyboard.
 - **Moving between the chat and the panel:** `alt+n` opens the panel and gives it the keyboard (with the key binding below); `esc` gives the keyboard back to the chat. The panel shows this on its bottom line.
-- **Tab** moves between items and buttons. **Enter** on an item opens its details; Enter again closes them. One item is open at a time.
+- Each item shows only its bold title until you pick it. **Tab** moves between items and buttons. **Enter** on an item shows who, which project and when, its open and skip buttons, and its details; Enter again closes them. One item is open at a time.
 - The open item has **o** (open or close its details) and **x** (skip it). Skipped items stay hidden in later sessions. With no item picked, `x` does nothing.
-- The bottom bar has small **design** (`t`) and **refresh** (`r`) buttons, and a dim, underlined **key** button (`k`). The key opens a short legend: what each colour and marker means in the current look, how the buttons work, and the **motion** switch (`m`, Reduce motion). Press **key** again to close it; it stays open or closed in later sessions.
+- The bottom bar has small **design** (`t`) and **refresh** (`r`) buttons, and a dim, underlined **key** button (`k`). The key opens a short legend: what each colour and marker means in the current look, and every switch (`t` design, `r` refresh, `m` motion, `o` open, `x` skip, `k` key, Tab, Enter, `alt+n`, `esc`), with the **motion** switch (Reduce motion) itself. Press **key** again to close it; it stays open or closed in later sessions.
 - When skills changed today, Today shows a button such as **+3 skills**; press it to list their names.
 
 The letter keys work while the pane has the keyboard.
