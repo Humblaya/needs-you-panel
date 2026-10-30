@@ -13,7 +13,7 @@ It makes no model calls. It reads only files that changed since its last look, l
 
 ## The four looks
 
-The pictures below are text versions of the 48-column layout with made-up sample data. In the terminal each look has its own colours and pixel art (drawn with half blocks), and gentle motion: blinking cursors, spinners, a sweeping scanline, a train running down a line. The pane narrows to a 36-column layout when there is less room.
+The pictures below are text versions of the 48-column layout with made-up sample data. In the terminal each look has its own colours and pixel art (drawn with half blocks), and gentle motion: blinking cursors, spinners, a sweeping scanline, a train running down a line. The drawing fills the pane from 24 to 64 columns wide, switching to a slimmer layout below 48.
 
 ### Hi-Score: an arcade cabinet
 Every item is a level to clear; an empty list says **STAGE CLEAR**.

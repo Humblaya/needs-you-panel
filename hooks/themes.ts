@@ -1,5 +1,5 @@
 // The four looks. Each builds the same sections (Needs you, Ready, Running,
-// Today) as rows of cells, 48 columns wide or 36 when narrow.
+// Today) as rows of cells that fill the pane, 24 to 64 columns wide.
 import type { NeedItem, NeedKind, Pr, Snapshot, ThemeId } from '../types'
 import type { PxSeg, Row, Seg, TextSeg } from './cells'
 import { S, fit, line, lr, pad, pixels, rpad, segWidth } from './cells'
@@ -616,7 +616,7 @@ function thermal(c: Ctx): Look {
   const px = (v: number, level: number, ground: string) => (v > level ? heat[Math.min(4, v) - 1]! : ground)
   rows.push({ segs: [{ px: vals.map((v): [string, string] => [px(v, 3, T.bg), px(v, 2, T.bg)]) }] })
   rows.push({ segs: [{ px: vals.map((v): [string, string] => [px(v, 1, T.bg), px(v, 0, C.floor)]) }] })
-  rows.push(lr(W, [S(narrow ? '-18h' : '-24h', { fg: C.dim })], [S('activity · now', { fg: C.dim })]))
+  rows.push(lr(W, [S(`-${W / 2}h`, { fg: C.dim })], [S('activity · now', { fg: C.dim })]))
   rows.push(line(W, []))
 
   const sec = (label: string, col: string, right: string) => {

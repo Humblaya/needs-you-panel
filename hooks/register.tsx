@@ -183,7 +183,7 @@ async function scan($: $) {
     needs,
     running: agents.running,
     today: { asked: guard.asked, blocked: guard.blocked, runs: agents.runs, skills: parseSkills(skillsText, dayStart) },
-    heat: heatStrip([...guard.times, ...agents.times], now, 48),
+    heat: heatStrip([...guard.times, ...agents.times], now, 64),
     at: now,
   }))
 }
