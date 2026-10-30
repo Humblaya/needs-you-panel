@@ -8,6 +8,7 @@ import {
   parseChecks,
   parseGuardLog,
   parseSearch,
+  parseSkills,
   parseTranscript,
 } from '../hooks/data'
 
@@ -176,4 +177,14 @@ test('terminal control characters in transcript text are removed', () => {
   expect(/[\u0000-\u001f\u007f-\u009f]/.test(items[0]?.title ?? '')).toBe(false)
   expect(/[\u0000-\u0008\u000b-\u001f\u007f-\u009f]/.test(items[0]?.detail.join('') ?? '')).toBe(false)
   expect(all.includes('red')).toBe(true)
+})
+
+test('a skills note from today gives the added and removed names', () => {
+  const dayStart = T0 - 3_600_000
+  const today = parseSkills(JSON.stringify({ time: iso(T0), added: ['alpha', 'beta', 'gamma'], removed: ['old'] }), dayStart)
+  expect(today).toEqual({ added: ['alpha', 'beta', 'gamma'], removed: ['old'] })
+  expect(parseSkills(JSON.stringify({ time: iso(dayStart - 1), added: ['alpha'], removed: [] }), dayStart)).toBeNull()
+  expect(parseSkills('not json', dayStart)).toBeNull()
+  expect(parseSkills(JSON.stringify({ time: iso(T0), added: [], removed: [] }), dayStart)).toBeNull()
+  expect(parseSkills(JSON.stringify({ time: iso(T0), added: [3, 'ok\u001b[1m'] }), dayStart)).toEqual({ added: ['ok'], removed: [] })
 })

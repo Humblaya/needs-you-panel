@@ -5,7 +5,7 @@ A mod for [Claude Code](https://code.claude.com) that keeps a **Needs You** pane
 1. **Needs you**: questions Claude asked you and you have not answered yet, runs that failed and then went quiet, finished turns you have not looked at, and approvals your guard hook asked for.
 2. **Ready**: your open pull requests on GitHub, with how many checks pass, fail or are still running.
 3. **Running**: sub-agents that are working right now.
-4. **Today**: how many times your guard hook asked or blocked today, and how many agent runs finished.
+4. **Today**: how many times your guard hook asked or blocked today, how many agent runs finished, and any skills installed or removed today.
 
 It comes in four looks, and a **change design** button (or the `t` key) switches between them. Your choice is remembered for the next session.
 
@@ -48,7 +48,7 @@ Every item is a level to clear; an empty list says **STAGE CLEAR**.
   blocked 2 · asked 3 · runs 9
 
 t: DESIGN ▸ HI-SCORE m: MOTION OFF r: REFRESH
-tab move · enter select · o open · x skip
+tab move · enter select · o open · x skip k: key
 ```
 
 ### Halo: a heads-up display
@@ -84,7 +84,7 @@ Corner brackets, a reticle and a threat meter that fills with each waiting item;
   guard 2 blocked · 3 asked · 9 runs
 
 t: DESIGN ▸ HALO m: MOTION OFF r: REFRESH
-tab move · enter select · o open · x skip
+tab move · enter select · o open · x skip k: key
 ```
 
 ### Metro: a transit map
@@ -119,7 +119,7 @@ Each section is a coloured line, each item a stop, and running agents are a trai
  ╹  blocked 2 · asked 3 · runs 9
 
 t: DESIGN ▸ METRO m: MOTION OFF r: REFRESH
-tab move · enter select · o open · x skip
+tab move · enter select · o open · x skip k: key
 ```
 
 ### Thermal: a heat camera
@@ -154,7 +154,7 @@ COOL · running                                 2
 TODAY blocked 2 · asked 3 · runs 9
 
 t: DESIGN ▸ THERMAL m: MOTION OFF r: REFRESH
-tab move · enter select · o open · x skip
+tab move · enter select · o open · x skip k: key
 ```
 
 ## Install
@@ -181,6 +181,8 @@ In the desktop app, where `/plugin` does not run: click + next to the prompt box
 - **Tab** moves between items and buttons. **Enter** on an item selects it; Enter again shows its details.
 - **o** opens or closes the selected item's details, **x** skips (hides) it. Skipped items stay hidden in later sessions.
 - **t** changes the design, **m** turns motion on or off (Reduce motion), **r** refreshes now.
+- The small, dim, underlined **key** button (or **k**) opens a short legend of what each colour and marker means in the current look, and the switches. Press it again to close it; it stays open or closed in later sessions.
+- When skills changed today, Today shows a button such as **+3 skills**; press it to list their names.
 
 The keys work while the pane has the keyboard (after `/needs-you`, a click on the pane, or ctrl+x tab).
 
@@ -194,7 +196,7 @@ The keys work while the pane has the keyboard (after `/needs-you`, a click on th
 | Guard approvals | `~/.claude/needs-you/guard.jsonl`, written by the optional guard hook below; asks from the last 10 minutes are listed |
 | Ready | `gh search prs --author @me --state open`, then `gh pr checks` for each (up to 10), at most every 2 minutes or when you press `r` |
 | Running | `~/.claude/needs-you/agents.jsonl`, written by the optional agent hook below: agents that started and have not stopped (older than 2 hours counts as stale and is left out) |
-| Today | The two log files above |
+| Today | The two log files above, and `~/.claude/needs-you/skills.json` when present |
 
 Transcripts bigger than 4 MB are read from their last 1 MB, using `tail` or, where that is missing (as on Windows), `node`.
 
@@ -214,6 +216,16 @@ The Running, Today and guard-approval parts need two small logs that Claude Code
   ```
 
 - **`guard.js`** is an example PreToolUse guard for the Bash and PowerShell tools. It asks before a push or commit to `main`, a pull-request merge or a force push, and blocks committing files that look like secrets and piping a download straight into a shell. Each ask or block also writes one line (time, decision, the reason's first sentence, project folder name; never the command) to `~/.claude/needs-you/guard.jsonl`. If you already have a guard, you only need its logging part: the `logDecision` function. Register it as a `PreToolUse` hook with the matcher `Bash|PowerShell`.
+
+### skills.json: an optional input any hook can write
+
+The panel also reads `~/.claude/needs-you/skills.json`, if it exists. Any script of yours (for example a SessionStart hook that notices new skills) can write it:
+
+```json
+{ "time": "2026-01-05T09:30:00.000Z", "added": ["skill-one", "skill-two"], "removed": ["old-skill"] }
+```
+
+When `time` is today, Today shows the change and lists the names on request. Keep the first `time` when you report the same change again, so it does not show as new every day. No script for this ships here.
 
 Tests for both: `node extras/hooks/guard.test.js` and `node extras/hooks/needs-you-agents.test.js`.
 

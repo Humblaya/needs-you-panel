@@ -29,7 +29,9 @@ export type Ready = { status: ReadyStatus; prs: Pr[]; at: number }
 
 export type RunningAgent = { id: string; who: string; project: string; at: number }
 
-export type Today = { asked: number; blocked: number; runs: number }
+export type SkillChange = { added: string[]; removed: string[] }
+
+export type Today = { asked: number; blocked: number; runs: number; skills: SkillChange | null }
 
 export type Snapshot = {
   needs: NeedItem[]
@@ -48,6 +50,8 @@ declare module 'claude-code' {
       reduceMotion: boolean
       selected: string
       isDetailOpen: boolean
+      isKeyOpen: boolean
+      isSkillsOpen: boolean
       frame: number
     }
   }

@@ -29,12 +29,12 @@ const SAMPLE: Snapshot = {
     { id: 'a1', who: 'Explore', project: 'demo-app', at: NOW - 720_000 },
     { id: 'a2', who: 'reviewer', project: 'notes', at: NOW - 180_000 },
   ],
-  today: { asked: 3, blocked: 2, runs: 9 },
+  today: { asked: 3, blocked: 2, runs: 9, skills: { added: ['alpha-skill', 'beta-skill', 'gamma-skill'], removed: ['old-skill'] } },
   heat: [0, 1, 2, 3, 4, 2, 1, 0, 3, 4],
   at: NOW - 3_000,
 }
 
-const EMPTY_SNAP: Snapshot = { ...SAMPLE, needs: [] }
+const EMPTY_SNAP: Snapshot = { ...SAMPLE, needs: [], today: { asked: 0, blocked: 0, runs: 0, skills: null } }
 
 const paneAt = (columns: number) =>
   ({
@@ -51,12 +51,13 @@ const paneAt = (columns: number) =>
  * Seeds the panel's session values as an earlier run would have left them:
  * each seed shows only until the panel writes that value itself.
  */
-function seed(on: On, values: { snapshot?: Snapshot; theme?: ThemeId; reduceMotion?: boolean }) {
+function seed(on: On, values: { snapshot?: Snapshot; theme?: ThemeId; reduceMotion?: boolean; isKeyOpen?: boolean }) {
   mock.clock(on, { now: NOW })
   const seeds: Record<string, unknown> = {}
-  if (values.snapshot) seeds.snapshot = { shape: 'snapshot-1', value: values.snapshot }
+  if (values.snapshot) seeds.snapshot = { shape: 'snapshot-2', value: values.snapshot }
   if (values.theme) seeds.theme = values.theme
   if (values.reduceMotion !== undefined) seeds.reduceMotion = values.reduceMotion
+  if (values.isKeyOpen !== undefined) seeds.isKeyOpen = values.isKeyOpen
   on('state.get', async ($, e, next) => {
     const below = await next(e)
     if (!(e.key in seeds) || !('value' in below) || (below.value?.version ?? 0) > 0) return below
@@ -81,6 +82,8 @@ const ctx = (theme: ThemeId, W: number, snap: Snapshot) => ({
   snap,
   selected: '',
   isDetailOpen: true,
+  isKeyOpen: true,
+  isSkillsOpen: true,
   frame: 7,
   motion: true,
   now: NOW,
@@ -187,5 +190,80 @@ test('pressing an item selects it and pressing again opens its details', async (
   expect(await ui.find({ type: 'Text', text: /• Blue/ })).toBeUndefined()
   await ui.press({ key: 'item:ask:s1:q1' })
   expect(await ui.find({ type: 'Text', text: /• Blue/ })).toBeDefined()
+  await ui.unmount()
+})
+
+const LEGEND: Record<ThemeId, RegExp> = {
+  hiscore: /question or approval/,
+  halo: /threat: items waiting/,
+  metro: /line A: agents/,
+  thermal: /white-hot: approval/,
+}
+
+for (const theme of THEMES) {
+  test(`${theme}: the key button opens and closes the legend and remembers it`, async ($, on) => {
+    const held = store(on)
+    seed(on, { snapshot: SAMPLE, theme, reduceMotion: true })
+    for (const cols of [60, 40]) {
+      const ui = await $.ui.mount(paneAt(cols))
+      expect(await ui.find({ key: 'key' })).toBeDefined()
+      const wasOpen = (await ui.find({ type: 'Text', text: LEGEND[theme] })) !== undefined
+      if (!wasOpen) {
+        await ui.press({ key: 'key' })
+        expect(held.keyOpen).toBe(true)
+      }
+      expect(await ui.find({ type: 'Text', text: LEGEND[theme] })).toBeDefined()
+      expect(await ui.find({ type: 'Text', text: /t design/ })).toBeDefined()
+      expect(await ui.find({ type: 'Text', text: /k key/ })).toBeDefined()
+      await ui.unmount()
+    }
+    const ui = await $.ui.mount(paneAt(60))
+    await ui.press({ key: 'key' })
+    expect(await ui.find({ type: 'Text', text: LEGEND[theme] })).toBeUndefined()
+    expect(held.keyOpen).toBe(false)
+    await ui.unmount()
+  })
+}
+
+test('the key button is dim and underlined', async ($, on) => {
+  seed(on, { snapshot: SAMPLE, reduceMotion: true })
+  const ui = await $.ui.mount(paneAt(60))
+  const label = await ui.find({ type: 'Text', text: /^key$/ })
+  expect(label?.props).toEqual(expect.objectContaining({ underline: true }))
+  await ui.unmount()
+})
+
+test('an open legend is shown again when the next session starts', async ($, on) => {
+  store(on, { keyOpen: true, reduceMotion: true, since: 1 })
+  mock.clock(on, { now: NOW })
+  on('session.start', (_, e) => ({ cwd: e.cwd }))
+  on('command.register', () => ({ value: { command: 'needs-you' } }))
+  on('session.id', () => ({ value: 'session-1' }))
+  on('ui.open', () => ({ value: { isPlaced: true } }))
+  await $.session.start({ cwd: '/', surface: 'terminal', isInteractive: true })
+  const ui = await $.ui.mount(paneAt(60))
+  expect(await ui.find({ type: 'Text', text: /question or approval/ })).toBeDefined()
+  await ui.unmount()
+})
+
+for (const theme of THEMES) {
+  test(`${theme}: today shows new skills, and opening it lists them`, async ($, on) => {
+    seed(on, { snapshot: SAMPLE, theme, reduceMotion: true })
+    const ui = await $.ui.mount(paneAt(40))
+    expect(await ui.find({ type: 'Text', text: /\+3 skills/})).toBeDefined()
+    expect(await ui.find({ type: 'Text', text: /beta-skill/ })).toBeUndefined()
+    await ui.press({ key: 'skills' })
+    expect(await ui.find({ type: 'Text', text: /beta-skill/ })).toBeDefined()
+    expect(await ui.find({ type: 'Text', text: /old-skill/ })).toBeDefined()
+    await ui.press({ key: 'skills' })
+    expect(await ui.find({ type: 'Text', text: /beta-skill/ })).toBeUndefined()
+    await ui.unmount()
+  })
+}
+
+test('no skills row when nothing changed today', async ($, on) => {
+  seed(on, { snapshot: EMPTY_SNAP, reduceMotion: true })
+  const ui = await $.ui.mount(paneAt(60))
+  expect(await ui.find({ key: 'skills' })).toBeUndefined()
   await ui.unmount()
 })

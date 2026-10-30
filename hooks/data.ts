@@ -1,6 +1,6 @@
 // Pure parsing for the Needs You panel: transcripts, the guard and agent
 // logs, and the gh CLI's JSON. No engine calls here, so tests run it as is.
-import type { NeedItem, Pr, RunningAgent } from '../types'
+import type { NeedItem, Pr, RunningAgent, SkillChange } from '../types'
 
 const FAIL_QUIET_MS = 30_000
 const GUARD_ASK_MS = 10 * 60_000
@@ -243,6 +243,22 @@ export function parseChecks(text: string) {
     // no checks reported
   }
   return c
+}
+
+/**
+ * `needs-you/skills.json`, which any hook may write: `{ time, added, removed }`.
+ * The change when it happened today and named a skill, else null.
+ */
+export function parseSkills(text: string, dayStart: number): SkillChange | null {
+  try {
+    const o: unknown = JSON.parse(text)
+    if (!isObj(o) || time(o.time) < dayStart) return null
+    const names = (v: unknown) => (Array.isArray(v) ? v.filter(x => typeof x === 'string').map(x => str(x)).filter(Boolean) : [])
+    const change = { added: names(o.added), removed: names(o.removed) }
+    return change.added.length || change.removed.length ? change : null
+  } catch {
+    return null
+  }
 }
 
 export function ageLabel(ms: number) {

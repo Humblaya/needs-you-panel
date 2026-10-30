@@ -9,7 +9,7 @@ import type { Ready, Snapshot, ThemeId } from '../types'
 import type { Action } from './cells'
 import { drawRows } from './cells'
 import type { Transcript } from './data'
-import { baseName, heatStrip, jsonLines, needsFromTranscript, parseAgents, parseChecks, parseGuardLog, parseSearch, parseTranscript } from './data'
+import { baseName, heatStrip, jsonLines, needsFromTranscript, parseAgents, parseChecks, parseGuardLog, parseSearch, parseSkills, parseTranscript } from './data'
 import { THEMES, backgroundOf, buildLook, nextTheme } from './themes'
 
 type $ = EngineInterface
@@ -28,16 +28,18 @@ export const EMPTY: Snapshot = {
   needs: [],
   ready: { status: 'loading', prs: [], at: 0 },
   running: [],
-  today: { asked: 0, blocked: 0, runs: 0 },
+  today: { asked: 0, blocked: 0, runs: 0, skills: null },
   heat: [],
   at: 0,
 }
 
-const snapshot = atom({ plugin: 'needs-you-panel', key: 'snapshot' } as const, EMPTY, { shape: 'snapshot-1' })
+const snapshot = atom({ plugin: 'needs-you-panel', key: 'snapshot' } as const, EMPTY, { shape: 'snapshot-2' })
 const theme = atom({ plugin: 'needs-you-panel', key: 'theme' } as const, 'hiscore')
 const reduceMotion = atom({ plugin: 'needs-you-panel', key: 'reduceMotion' } as const, false)
 const selected = atom({ plugin: 'needs-you-panel', key: 'selected' } as const, '')
 const isDetailOpen = atom({ plugin: 'needs-you-panel', key: 'isDetailOpen' } as const, false)
+const isKeyOpen = atom({ plugin: 'needs-you-panel', key: 'isKeyOpen' } as const, false)
+const isSkillsOpen = atom({ plugin: 'needs-you-panel', key: 'isSkillsOpen' } as const, false)
 const frame = atom({ plugin: 'needs-you-panel', key: 'frame' } as const, 0)
 
 // a node one-liner that prints a file's last bytes, for transcripts too big to read whole
@@ -154,6 +156,7 @@ async function scan($: $) {
   }
   const guardText = await readLog($, `${root}/needs-you/guard.jsonl`)
   const agentText = await readLog($, `${root}/needs-you/agents.jsonl`)
+  const skillsText = await readLog($, `${root}/needs-you/skills.json`)
   const guard = parseGuardLog(guardText, now, dayStart)
   const agents = parseAgents(agentText, now, dayStart)
   const times = [...jsonLines(guardText), ...jsonLines(agentText)].map(r => Date.parse(String(r.time))).filter(t => !Number.isNaN(t))
@@ -163,7 +166,7 @@ async function scan($: $) {
     ...s,
     needs,
     running: agents.running,
-    today: { asked: guard.asked, blocked: guard.blocked, runs: agents.runs },
+    today: { asked: guard.asked, blocked: guard.blocked, runs: agents.runs, skills: parseSkills(skillsText, dayStart) },
     heat: heatStrip(times, now, 48),
     at: now,
   }))
@@ -244,6 +247,11 @@ async function act($: $, a: Action) {
     isMotionOn = !still
     await $.store.set('reduceMotion', still)
   }
+  if (a.type === 'key') {
+    const open = await update($, isKeyOpen, v => !v)
+    await $.store.set('keyOpen', open)
+  }
+  if (a.type === 'skills') await update($, isSkillsOpen, v => !v)
   if (a.type === 'refresh') {
     lastScan = 0
     lastGh = 0
@@ -260,6 +268,8 @@ export const register: Register = on => {
     const still = (await $.store.get('reduceMotion')) === true
     await update($, reduceMotion, () => still)
     isMotionOn = !still
+    const keyOpen = (await $.store.get('keyOpen')) === true
+    await update($, isKeyOpen, () => keyOpen)
     const gone = await $.store.get('dismissed')
     dismissed = new Set(Array.isArray(gone) ? gone.filter((x): x is string => typeof x === 'string') : [])
     const first = await $.store.get('since')
@@ -296,6 +306,8 @@ export const register: Register = on => {
       snap: await read($, snapshot),
       selected: await read($, selected),
       isDetailOpen: await read($, isDetailOpen),
+      isKeyOpen: await read($, isKeyOpen),
+      isSkillsOpen: await read($, isSkillsOpen),
       frame: still ? 0 : await read($, frame),
       motion: !still,
       now: await $.clock.now(),

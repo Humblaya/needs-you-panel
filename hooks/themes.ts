@@ -20,6 +20,8 @@ export type Ctx = {
   snap: Snapshot
   selected: string
   isDetailOpen: boolean
+  isKeyOpen: boolean
+  isSkillsOpen: boolean
   frame: number
   motion: boolean
   now: number
@@ -110,9 +112,16 @@ function readyMessage(c: Ctx): string | undefined {
   return undefined
 }
 
-function controls(c: Ctx, accent: string, dim: string): Row[] {
+/** A glyph in its colour and what it means, for the key. */
+type Meaning = [glyph: string, colour: string, meaning: string]
+
+/**
+ * The switches, the hint line with the small key button, and, while the key
+ * is open, what each colour means in this look and what each switch does.
+ */
+function controls(c: Ctx, accent: string, dim: string, faint: string, meanings: Meaning[]): Row[] {
   const name = THEME_NAMES[c.theme].toUpperCase()
-  return [
+  const rows = [
     line(c.W, [
       { btn: 'design', hotkey: 't', act: { type: 'theme' }, segs: [S(c.narrow ? name : `DESIGN ▸ ${name}`, { fg: accent, b: true })] },
       S(' '),
@@ -120,8 +129,38 @@ function controls(c: Ctx, accent: string, dim: string): Row[] {
       S(' '),
       { btn: 'refresh', hotkey: 'r', act: { type: 'refresh' }, segs: [S('REFRESH', { fg: dim })] },
     ]),
-    line(c.W, [S(c.narrow ? 'tab move · o open · x skip' : 'tab move · enter select · o open · x skip', { fg: dim })]),
+    lr(
+      c.W,
+      [S(c.narrow ? 'tab move · o open · x skip' : 'tab move · enter select · o open · x skip', { fg: dim })],
+      [{ btn: 'key', hotkey: 'k', act: { type: 'key' }, segs: [S('key', { fg: faint, u: true })] }],
+    ),
   ]
+  if (c.isKeyOpen) {
+    for (const [glyph, colour, meaning] of meanings) {
+      rows.push(line(c.W, [S('  '), S(glyph, { fg: colour }), S(' '), S(fit(meaning, c.W - 3 - [...glyph].length), { fg: dim })]))
+    }
+    rows.push(line(c.W, [S('  t design · m motion · r refresh', { fg: faint })]))
+    rows.push(line(c.W, [S('  o open · x skip · k key', { fg: faint })]))
+  }
+  return rows
+}
+
+/** Under Today: a button naming today's skill changes, and the names once opened. */
+function skillsRows(c: Ctx, lead: Seg[], colour: string, dim: string): Row[] {
+  const change = c.snap.today.skills
+  if (!change) return []
+  const parts = [change.added.length ? `+${change.added.length} skills` : '', change.removed.length ? `-${change.removed.length} removed` : '']
+  const rows = [line(c.W, [...lead, { btn: 'skills', act: { type: 'skills' }, segs: [S(parts.filter(Boolean).join(' · '), { fg: colour })] }])]
+  if (c.isSkillsOpen) {
+    const leadW = lead.reduce((n, x) => n + ('t' in x ? [...x.t].length : 0), 0)
+    const blank = S(' '.repeat(leadW))
+    const lists: Array<[string, string[]]> = [['+ ', change.added], ['- ', change.removed]]
+    for (const [mark, names] of lists) {
+      if (!names.length) continue
+      for (const l of wrap(mark + names.join(', '), c.W - leadW, 6)) rows.push(line(c.W, [blank, S(l, { fg: dim })]))
+    }
+  }
+  return rows
 }
 
 const summary = (c: Ctx) =>
@@ -221,8 +260,18 @@ function hiscore(c: Ctx): Look {
   rows.push(line(W, []))
   rows.push(sec(4, 'TODAY', C.lemon, ''))
   rows.push(line(W, [S('  '), S(todayText(c), { fg: C.dim })]))
+  rows.push(...skillsRows(c, [S('  ')], C.lemon, C.dim))
   rows.push(line(W, []))
-  rows.push(...controls(c, C.lemon, C.dim))
+  rows.push(
+    ...controls(c, C.lemon, C.dim, '#6E6896', [
+      ['■', C.pink, 'question or approval'],
+      ['■', C.red, 'failed run'],
+      ['■', C.lemon, 'finished, not viewed yet'],
+      ['✓', C.mint, 'checks pass'],
+      ['×', C.red, 'checks fail'],
+      ['◐', C.cyan, 'checks or agent running'],
+    ]),
+  )
   return { ...T, rows }
 }
 
@@ -323,8 +372,19 @@ function halo(c: Ctx): Look {
   rows.push(
     line(W, [S('  '), S('guard ', { fg: C.dim }), S(`${snap.today.blocked} blocked`, { fg: C.amber }), S(` · ${snap.today.asked} asked · ${snap.today.runs} runs`, { fg: C.dim })]),
   )
+  rows.push(...skillsRows(c, [S('  ')], C.cyan, C.dim))
   rows.push(line(W, []))
-  rows.push(...controls(c, C.cyan, C.dim))
+  rows.push(
+    ...controls(c, C.cyan, C.dim, '#4F7684', [
+      ['◉', C.alert, 'lock: question or approval'],
+      ['◉', C.amber, 'caution: failed run'],
+      ['○', C.green, 'clear: finished, not viewed'],
+      ['▰', C.green, 'checks passed (meter)'],
+      ['▰', C.alert, 'checks failing'],
+      ['⠋', C.cyan, 'scan: agent running'],
+      ['▮', C.alert, 'threat: items waiting'],
+    ]),
+  )
 
   // the scanline: one row brightens as it sweeps down, about every six seconds
   if (c.motion) {
@@ -416,8 +476,18 @@ function metro(c: Ctx): Look {
   rows.push(line(W, []))
   rows.push(line(W, [badge('T', C.grey), S(' TODAY', { fg: T.fg, b: true })]))
   rows.push(line(W, [S(' ╹', { fg: C.grey }), S('  '), S(fit(todayText(c), W - 4), { fg: C.dim })]))
+  rows.push(...skillsRows(c, [S('    ')], C.white, C.dim))
   rows.push(line(W, []))
-  rows.push(...controls(c, C.white, C.dim))
+  rows.push(
+    ...controls(c, C.white, C.dim, '#6B717C', [
+      ['●', C.red, 'stop: question or approval'],
+      ['×', C.orange, 'stop: failed run'],
+      ['○', C.white, 'stop: finished, not viewed'],
+      ['R', C.green, 'line R: ready PRs (✓ pass, × fail)'],
+      ['A', C.blue, 'line A: agents (▼ is the train)'],
+      ['◌', C.blue, 'checks running'],
+    ]),
+  )
   return { ...T, rows }
 }
 
@@ -513,8 +583,18 @@ function thermal(c: Ctx): Look {
 
   rows.push(line(W, []))
   rows.push(line(W, [S('TODAY ', { fg: C.dim, b: true }), S(fit(todayText(c), W - 6), { fg: C.dim })]))
+  rows.push(...skillsRows(c, [S('      ')], C.yellow, C.dim))
   rows.push(line(W, []))
-  rows.push(...controls(c, C.yellow, C.dim))
+  rows.push(
+    ...controls(c, C.yellow, C.dim, '#6A6580', [
+      ['██', C.white, 'white-hot: approval'],
+      ['██', C.yellow, 'hot: question'],
+      ['██', C.orange, 'burning: failed run'],
+      ['██', C.magenta, 'warm: finished or ready PR'],
+      ['▕▏', C.blue, 'cool: agent running'],
+      ['▀▀', C.yellow, 'strip: activity per half hour'],
+    ]),
+  )
   return { ...T, rows }
 }
 
@@ -526,9 +606,11 @@ export const backgroundOf = (t: ThemeId) => buildLook({ ...EMPTY_CTX, theme: t }
 const EMPTY_CTX: Ctx = {
   W: 48,
   narrow: false,
-  snap: { needs: [], ready: { status: 'ok', prs: [], at: 0 }, running: [], today: { asked: 0, blocked: 0, runs: 0 }, heat: [], at: 0 },
+  snap: { needs: [], ready: { status: 'ok', prs: [], at: 0 }, running: [], today: { asked: 0, blocked: 0, runs: 0, skills: null }, heat: [], at: 0 },
   selected: '',
   isDetailOpen: false,
+  isKeyOpen: false,
+  isSkillsOpen: false,
   frame: 0,
   motion: false,
   now: 0,

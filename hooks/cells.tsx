@@ -10,6 +10,8 @@ export type Action =
   | { type: 'theme' }
   | { type: 'motion' }
   | { type: 'refresh' }
+  | { type: 'key' }
+  | { type: 'skills' }
 
 export type TextSeg = { t: string; fg?: string; bg?: string; b?: boolean; u?: boolean }
 /** Half-block pixels: each cell is [top colour, bottom colour]. */
