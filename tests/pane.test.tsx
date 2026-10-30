@@ -5,7 +5,7 @@ import type { On } from 'claude-code'
 import type { Snapshot, ThemeId } from '../types'
 import type { Row } from '../hooks/cells'
 import { rowWidth } from '../hooks/cells'
-import { THEMES, buildLook } from '../hooks/themes'
+import { THEMES, bigWord, buildLook } from '../hooks/themes'
 
 const NOW = Date.parse('2026-01-05T12:00:00.000Z')
 
@@ -332,8 +332,8 @@ for (const theme of THEMES) {
       const look = buildLook({ ...ctx(theme, W, SAMPLE), isKeyOpen: false, isSkillsOpen: false })
       const pxRows = look.rows.filter(r => r.segs.some(x => 'px' in x)).length
       const art = HEADER_PX[theme][W === 48 ? 0 : 1]
-      // four sections, three rows of half blocks each
-      expect(pxRows - art).toBeGreaterThanOrEqual(12)
+      // four sections, exactly two rows of half blocks each: only a little bigger than one row
+      expect(pxRows - art).toBe(8)
     })
   }
 }
@@ -373,4 +373,15 @@ test('/needs-you opens the pane with the keyboard and leaves no transcript row',
   const ran = await $.command.run({ command: 'needs-you', args: '', origin: { kind: 'composer' }, presentation: { isFullscreen: true, columns: 160 } })
   expect(ran).toEqual({})
   expect(opened[opened.length - 1]).toEqual(expect.objectContaining({ id: 'needs-you', focus: true }))
+})
+
+test('big letters are two rows tall and three cells wide', () => {
+  for (const word of ['NEEDS YOU', 'READY', 'RUNNING', 'TODAY', 'HOT', 'WARM', 'COOL']) {
+    const rows = bigWord(word, '#FFFFFF', '#000000')
+    expect(rows.length).toBe(2)
+    const letters = word.replace(/ /g, '').length
+    const spaces = word.split(' ').length - 1
+    // 3 cells a letter, 1 between letters of a word, 2 for a space
+    expect(rows[0]!.px.length).toBe(letters * 3 + (letters - 1 - spaces) + spaces * 2)
+  }
 })

@@ -131,35 +131,36 @@ function readyMessage(c: Ctx): string | undefined {
 /** A glyph in its colour and what it means, for the key. */
 type Meaning = [glyph: string, colour: string, meaning: string]
 
-// A 3×5 pixel font for section names. A terminal draws one font size, so big
-// letters are drawn with half blocks: each letter is 3 cells wide, 3 rows tall.
+// A 3×4 pixel font for section names. A terminal draws one font size, so
+// slightly bigger letters are drawn with half blocks: each letter is 3 cells
+// wide and 2 rows tall, only a little taller than a line of text.
 const FONT: Record<string, string[]> = {
-  A: ['010', '101', '111', '101', '101'],
-  C: ['011', '100', '100', '100', '011'],
-  D: ['110', '101', '101', '101', '110'],
-  E: ['111', '100', '110', '100', '111'],
-  G: ['011', '100', '101', '101', '011'],
-  H: ['101', '101', '111', '101', '101'],
-  I: ['111', '010', '010', '010', '111'],
-  L: ['100', '100', '100', '100', '111'],
-  M: ['101', '111', '111', '101', '101'],
-  N: ['110', '101', '101', '101', '101'],
-  O: ['010', '101', '101', '101', '010'],
-  R: ['110', '101', '110', '101', '101'],
-  S: ['011', '100', '010', '001', '110'],
-  T: ['111', '010', '010', '010', '010'],
-  U: ['101', '101', '101', '101', '111'],
-  W: ['101', '101', '111', '111', '101'],
-  Y: ['101', '101', '010', '010', '010'],
+  A: ['010', '101', '111', '101'],
+  C: ['011', '100', '100', '011'],
+  D: ['110', '101', '101', '110'],
+  E: ['111', '110', '100', '111'],
+  G: ['011', '100', '101', '011'],
+  H: ['101', '111', '101', '101'],
+  I: ['111', '010', '010', '111'],
+  L: ['100', '100', '100', '111'],
+  M: ['111', '111', '101', '101'],
+  N: ['110', '101', '101', '101'],
+  O: ['010', '101', '101', '010'],
+  R: ['110', '101', '110', '101'],
+  S: ['011', '100', '001', '110'],
+  T: ['111', '010', '010', '010'],
+  U: ['101', '101', '101', '111'],
+  W: ['101', '101', '111', '111'],
+  Y: ['101', '101', '010', '010'],
 }
 
-/** A word in big pixel letters: three rows of half blocks in `colour` over `ground`. */
+/** A word in big pixel letters: two rows of half blocks in `colour` over `ground`. */
 export function bigWord(word: string, colour: string, ground: string): PxSeg[] {
-  const grid = ['', '', '', '', '', '']
+  const grid = ['', '', '', '']
   const chars = [...word.toUpperCase()]
   chars.forEach((ch, i) => {
     const glyph = FONT[ch]
-    for (let y = 0; y < 6; y++) {
+    for (let y = 0; y < 4; y++) {
       grid[y] += glyph ? (glyph[y] ?? '000').replace(/0/g, '.').replace(/1/g, 'x') : '..'
       if (glyph && i < chars.length - 1 && FONT[chars[i + 1] ?? ''] !== undefined) grid[y] += '.'
     }
@@ -168,9 +169,9 @@ export function bigWord(word: string, colour: string, ground: string): PxSeg[] {
 }
 
 /**
- * A section header in big letters: \`lead\` and \`right\` sit on its middle
- * row. Where it would not fit, \`right\` goes; where even the word does not
- * fit, the theme's own one-row header (\`small\`) is used instead.
+ * A section header in big letters, two rows tall: `lead` and `right` sit on
+ * its lower row. Where it would not fit, `right` goes; where even the word
+ * does not fit, the theme's own one-row header (`small`) is used instead.
  */
 function bigSec(W: number, word: string, colour: string, ground: string, lead: Seg[], right: Seg[], small: Row): Row[] {
   const px = bigWord(word, colour, ground)
@@ -179,7 +180,7 @@ function bigSec(W: number, word: string, colour: string, ground: string, lead: S
   if (width(lead) + pxW > W) return [small]
   const r = width(lead) + pxW + 1 + width(right) <= W ? right : []
   const blank = S(' '.repeat(width(lead)))
-  return px.map((p, i) => (i === 1 ? lr(W, [...lead, p], r.length ? [S(' '), ...r] : []) : line(W, [blank, p])))
+  return px.map((p, i) => (i === px.length - 1 ? lr(W, [...lead, p], r.length ? [S(' '), ...r] : []) : line(W, [blank, p])))
 }
 
 /** The keys that move between the chat and the panel: alt+n runs /needs-you (a keybinding), esc returns. */

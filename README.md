@@ -24,9 +24,8 @@ Every item is a level to clear; an empty list says **STAGE CLEAR**.
 ██████████
  ██▀▀▀▀▀▀   TAB TO PICK · ENTER TO OPEN
 
-    █▀▄ █▀▀ █▀▀ █▀▄ ▄▀▀  █ █ ▄▀▄ █ █
- 1  █ █ █▀  █▀  █ █  ▀▄   █  █ █ █ █           4
-    ▀ ▀ ▀▀▀ ▀▀▀ ▀▀  ▀▀    ▀   ▀  ▀▀▀
+    █▀▄ ██▀ ██▀ █▀▄ ▄▀▀  █ █ ▄▀▄ █ █
+ 1  █ █ █▄▄ █▄▄ █▄▀ ▄▄▀   █  ▀▄▀ █▄█           4
    APPROVE  This push goes to main.
             guard · demo-app · now
 
@@ -39,22 +38,19 @@ Every item is a level to clear; an empty list says **STAGE CLEAR**.
    DONE     The report is ready.
             Report writer · notes · 18m
 
-    █▀▄ █▀▀ ▄▀▄ █▀▄ █ █
- 2  █▀▄ █▀  █▀█ █ █  █        3 open, not merged
-    ▀ ▀ ▀▀▀ ▀ ▀ ▀▀   ▀
+    █▀▄ ██▀ ▄▀▄ █▀▄ █ █
+ 2  █▀▄ █▄▄ █▀█ █▄▀  █        3 open, not merged
   #12  parser        Add a parser        ✓ 20/20
   #42  app           Fix the streak cou… × 14/16
   #7   site          New header          ◐  6/11
 
     █▀▄ █ █ █▀▄ █▀▄ ▀█▀ █▀▄ ▄▀▀
- 3  █▀▄ █ █ █ █ █ █  █  █ █ █ █                2
-    ▀ ▀ ▀▀▀ ▀ ▀ ▀ ▀ ▀▀▀ ▀ ▀  ▀▀
+ 3  █▀▄ █▄█ █ █ █ █ ▄█▄ █ █ ▀▄█                2
   ◐ Explore        demo-app                  12m
   ◐ reviewer       notes                      3m
 
     ▀█▀ ▄▀▄ █▀▄ ▄▀▄ █ █
- 4   █  █ █ █ █ █▀█  █
-     ▀   ▀  ▀▀  ▀ ▀  ▀
+ 4   █  ▀▄▀ █▄▀ █▀█  █
   blocked 2 · asked 3 · runs 9
 
 t: design  r: refresh                     k: key
@@ -71,9 +67,8 @@ Corner brackets, a reticle and a threat meter that fills with each waiting item;
   ▀▄▄▄▄▀   link ok · synced just now
 └─                                            ─┘
 
-  █▀▄ █▀▀ █▀▀ █▀▄ ▄▀▀  █ █ ▄▀▄ █ █
-▸ █ █ █▀  █▀  █ █  ▀▄   █  █ █ █ █          [04]
-  ▀ ▀ ▀▀▀ ▀▀▀ ▀▀  ▀▀    ▀   ▀  ▀▀▀
+  █▀▄ ██▀ ██▀ █▀▄ ▄▀▀  █ █ ▄▀▄ █ █
+▸ █ █ █▄▄ █▄▄ █▄▀ ▄▄▀   █  ▀▄▀ █▄█          [04]
  ◉ APPROVE  This push goes to main.
   └ guard · demo-app · now
 
@@ -86,9 +81,8 @@ Corner brackets, a reticle and a threat meter that fills with each waiting item;
  ○ DONE     The report is ready.
   └ Report writer · notes · 18m
 
-  █▀▄ █▀▀ ▄▀▄ █▀▄ █ █
-▸ █▀▄ █▀  █▀█ █ █  █                        [03]
-  ▀ ▀ ▀▀▀ ▀ ▀ ▀▀   ▀
+  █▀▄ ██▀ ▄▀▄ █▀▄ █ █
+▸ █▀▄ █▄▄ █▀█ █▄▀  █                        [03]
   parser #12        ▰▰▰▰▰▰▰▰▰▰            20/20
    └ Add a parser · not merged
 
@@ -99,14 +93,12 @@ Corner brackets, a reticle and a threat meter that fills with each waiting item;
    └ New header · not merged
 
   █▀▄ █ █ █▀▄ █▀▄ ▀█▀ █▀▄ ▄▀▀
-▸ █▀▄ █ █ █ █ █ █  █  █ █ █ █               [02]
-  ▀ ▀ ▀▀▀ ▀ ▀ ▀ ▀ ▀▀▀ ▀ ▀  ▀▀
+▸ █▀▄ █▄█ █ █ █ █ ▄█▄ █ █ ▀▄█               [02]
   ⠋ Explore        demo-app                 12m
   ⠋ reviewer       notes                     3m
 
   ▀█▀ ▄▀▄ █▀▄ ▄▀▄ █ █
-▸  █  █ █ █ █ █▀█  █                        [··]
-   ▀   ▀  ▀▀  ▀ ▀  ▀
+▸  █  ▀▄▀ █▄▀ █▀█  █                        [··]
   guard 2 blocked · 3 asked · 9 runs
 
 t: design  r: refresh                     k: key
@@ -120,9 +112,8 @@ Each section is a coloured line, each item a stop, and running agents are a trai
  ◉ NEEDS YOU                    4 stops · 14:02
 ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
 
-    █▀▄ █▀▀ █▀▀ █▀▄ ▄▀▀  █ █ ▄▀▄ █ █
- N  █ █ █▀  █▀  █ █  ▀▄   █  █ █ █ █     4 stops
-    ▀ ▀ ▀▀▀ ▀▀▀ ▀▀  ▀▀    ▀   ▀  ▀▀▀
+    █▀▄ ██▀ ██▀ █▀▄ ▄▀▀  █ █ ▄▀▄ █ █
+ N  █ █ █▄▄ █▄▄ █▄▀ ▄▄▀   █  ▀▄▀ █▄█     4 stops
  ●  This push goes to main.
  ┃  guard · demo-app · now
  ┃
@@ -135,23 +126,20 @@ Each section is a coloured line, each item a stop, and running agents are a trai
  ○  The report is ready.
  ╹  Report writer · notes · 18m
 
-    █▀▄ █▀▀ ▄▀▄ █▀▄ █ █
- R  █▀▄ █▀  █▀█ █ █  █                not merged
-    ▀ ▀ ▀▀▀ ▀ ▀ ▀▀   ▀
+    █▀▄ ██▀ ▄▀▄ █▀▄ █ █
+ R  █▀▄ █▄▄ █▀█ █▄▀  █                not merged
  ┃  #12  parser        Add a parser      ✓ 20/20
  ┃  #42  app           Fix the streak …  × 14/16
  ╹  #7   site          New header        ◌  6/11
 
     █▀▄ █ █ █▀▄ █▀▄ ▀█▀ █▀▄ ▄▀▀
- A  █▀▄ █ █ █ █ █ █  █  █ █ █ █         2 agents
-    ▀ ▀ ▀▀▀ ▀ ▀ ▀ ▀ ▀▀▀ ▀ ▀  ▀▀
+ A  █▀▄ █▄█ █ █ █ █ ▄█▄ █ █ ▀▄█         2 agents
  ┃  Explore        demo-app                  12m
  ┃  reviewer       notes                      3m
  ╹
 
     ▀█▀ ▄▀▄ █▀▄ ▄▀▄ █ █
- T   █  █ █ █ █ █▀█  █
-     ▀   ▀  ▀▀  ▀ ▀  ▀
+ T   █  ▀▄▀ █▄▀ █▀█  █
  ╹  blocked 2 · asked 3 · runs 9
 
 t: design  r: refresh                     k: key
@@ -167,9 +155,8 @@ NEEDS YOU  core 4°         hot 4  warm 3  cool 2
 ▄▄▄▄▄▄█▄████████▄▄▄▄▄▄█▄████████▄▄▄▄▄▄█▄████████
 -24h                              activity · now
 
-█ █ ▄▀▄ ▀█▀
-█▀█ █ █  █                          needs you  4
-▀ ▀  ▀   ▀
+█▄█ ▄▀▄ ▀█▀
+█ █ ▀▄▀  █                          needs you  4
 ██ approve  This push goes to main.
 ██          guard · demo-app · now
 
@@ -182,22 +169,19 @@ NEEDS YOU  core 4°         hot 4  warm 3  cool 2
 ██ done     The report is ready.
 ██          Report writer · notes · 18m
 
-█ █ ▄▀▄ █▀▄ █▄█
-███ █▀█ █▀▄ █▀█             ready, not merged  3
-▀ ▀ ▀ ▀ ▀ ▀ ▀ ▀
+█ █ ▄▀▄ █▀▄ ███
+███ █▀█ █▀▄ █ █             ready, not merged  3
 ▐▌ #12  parser        Add a parser       ✓ 20/20
 ▐▌ #42  app           Fix the streak co… × 14/16
 ▐▌ #7   site          New header         ⠋  6/11
 
 ▄▀▀ ▄▀▄ ▄▀▄ █
-█   █ █ █ █ █                         running  2
- ▀▀  ▀   ▀  ▀▀▀
+▀▄▄ ▀▄▀ ▀▄▀ █▄▄                       running  2
 ▕▏ ⠋ Explore        demo-app                 12m
 ▕▏ ⠋ reviewer       notes                     3m
 
 ▀█▀ ▄▀▄ █▀▄ ▄▀▄ █ █
- █  █ █ █ █ █▀█  █
- ▀   ▀  ▀▀  ▀ ▀  ▀
+ █  ▀▄▀ █▄▀ █▀█  █
 blocked 2 · asked 3 · runs 9
 
 t: design  r: refresh                     k: key
