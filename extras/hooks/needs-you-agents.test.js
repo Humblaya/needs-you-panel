@@ -28,6 +28,21 @@ const cases = [
     record({ hook_event_name: "Stop", cwd: "C:/a" }, file, 4000);
     return read().length === 3;
   }],
+  ["a log over 1 MB keeps only its last 2000 lines", () => {
+    const big = path.join(tmp, "big.jsonl");
+    fs.writeFileSync(big, Array.from({ length: 3000 }, (_, i) => JSON.stringify({ n: i, pad: "x".repeat(400) })).join("\n") + "\n");
+    record({ hook_event_name: "SubagentStop", agent_type: "Plan", cwd: "C:/a" }, big, 6000);
+    const lines = fs.readFileSync(big, "utf8").trim().split("\n");
+    return lines.length <= 2001 && lines.length >= 1999 && JSON.parse(lines[lines.length - 1]).event === "stop";
+  }],
+  ["the log goes under CLAUDE_CONFIG_DIR when it is set", () => {
+    const dir = path.join(tmp, "config");
+    require("child_process").execFileSync(process.execPath, [path.join(__dirname, "needs-you-agents.js")], {
+      input: JSON.stringify({ hook_event_name: "SubagentStart", agent_type: "Explore", cwd: "C:/code/app" }),
+      env: { ...process.env, CLAUDE_CONFIG_DIR: dir },
+    });
+    return JSON.parse(fs.readFileSync(path.join(dir, "needs-you", "agents.jsonl"), "utf8")).project === "app";
+  }],
   ["an unwritable path fails silently", () => {
     try { record({ hook_event_name: "SubagentStart" }, path.join(file, "x", "y.jsonl"), 5000); return true; } catch { return false; }
   }],

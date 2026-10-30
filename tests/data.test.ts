@@ -188,3 +188,18 @@ test('a skills note from today gives the added and removed names', () => {
   expect(parseSkills(JSON.stringify({ time: iso(T0), added: [], removed: [] }), dayStart)).toBeNull()
   expect(parseSkills(JSON.stringify({ time: iso(T0), added: [3, 'ok\u001b[1m'] }), dayStart)).toEqual({ added: ['ok'], removed: [] })
 })
+
+test('control characters in a failed tool result are removed', () => {
+  const text = jl(
+    assistant(T0, [{ type: 'tool_use', id: 't1', name: 'Bash', input: {} }]),
+    user(T0 + 1000, [{ type: 'tool_result', tool_use_id: 't1', content: '\u001b[31mFAIL\u001b[0m 2 tests', is_error: true }]),
+  )
+  const items = needsFromTranscript(parseTranscript(text), { session: 's1', now: T0 + 60000, since: 0 })
+  expect(items[0]?.detail.join(' ')).toBe('FAIL 2 tests')
+})
+
+test('the guard and agent logs also give each line time, for the heat strip', () => {
+  const text = jl({ time: iso(T0), decision: 'ask', reason: 'r', project: 'p' }, { time: iso(T0 + 1), event: 'start', agent_type: 'x' })
+  expect(parseGuardLog(text, T0, 0).times).toEqual([T0, T0 + 1])
+  expect(parseAgents(text, T0, 0).times).toEqual([T0, T0 + 1])
+})

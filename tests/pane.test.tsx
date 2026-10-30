@@ -3,6 +3,7 @@ import { expect, mock, test } from 'claude-code/testing'
 import type { On } from 'claude-code'
 
 import type { Snapshot, ThemeId } from '../types'
+import type { Row } from '../hooks/cells'
 import { rowWidth } from '../hooks/cells'
 import { THEMES, buildLook } from '../hooks/themes'
 
@@ -118,7 +119,7 @@ for (const theme of THEMES) {
       expect(await ui.find({ type: 'Text', text: /This push goes to/ })).toBeDefined()
       expect(await ui.find({ type: 'Text', text: /parser/ })).toBeDefined()
       expect(await ui.find({ type: 'Text', text: /Explore/ })).toBeDefined()
-      expect(await ui.find({ key: 'design' })).toBeDefined()
+      expect(await ui.find({ key: 'key' })).toBeDefined()
       await ui.unmount()
     }
   })
@@ -135,7 +136,7 @@ for (const theme of THEMES) {
 test('the design button cycles the look and stores the choice', async ($, on) => {
   const held = store(on)
   on('ui.open', () => ({ value: { isPlaced: true } }))
-  seed(on, { snapshot: SAMPLE, reduceMotion: true })
+  seed(on, { snapshot: SAMPLE, reduceMotion: true, isKeyOpen: true })
   const ui = await $.ui.mount(paneAt(60))
   expect(await ui.find({ type: 'Text', text: /DESIGN ▸ HI-SCORE/ })).toBeDefined()
   await ui.press({ key: 'design' })
@@ -150,7 +151,7 @@ test('the design button cycles the look and stores the choice', async ($, on) =>
 })
 
 test('a stored look is used when the next session starts', async ($, on) => {
-  store(on, { theme: 'thermal', reduceMotion: true, since: 1 })
+  store(on, { theme: 'thermal', reduceMotion: true, keyOpen: true, since: 1 })
   mock.clock(on, { now: NOW })
   on('session.start', (_, e) => ({ cwd: e.cwd }))
   on('command.register', () => ({ value: { command: 'needs-you' } }))
@@ -164,7 +165,7 @@ test('a stored look is used when the next session starts', async ($, on) => {
 
 test('the motion button turns motion off and stores it', async ($, on) => {
   const held = store(on)
-  seed(on, { snapshot: SAMPLE })
+  seed(on, { snapshot: SAMPLE, isKeyOpen: true })
   const ui = await $.ui.mount(paneAt(60))
   expect(await ui.find({ type: 'Text', text: /MOTION ON/ })).toBeDefined()
   await ui.press({ key: 'motion' })
@@ -177,19 +178,45 @@ test('skip hides the selected item and remembers it', async ($, on) => {
   const held = store(on)
   seed(on, { snapshot: SAMPLE, reduceMotion: true })
   const ui = await $.ui.mount(paneAt(60))
+  await ui.press({ key: 'item:fail:s2:1' })
   await ui.press({ key: 'dismiss' })
-  expect(await ui.find({ type: 'Text', text: /This push goes to main/ })).toBeUndefined()
-  expect(held.dismissed).toEqual(['guard:1'])
+  expect(await ui.find({ type: 'Text', text: /Bash failed/ })).toBeUndefined()
+  expect(await ui.find({ type: 'Text', text: /This push goes to main/ })).toBeDefined()
+  expect(held.dismissed).toEqual(['fail:s2:1'])
   await ui.unmount()
 })
 
-test('pressing an item selects it and pressing again opens its details', async ($, on) => {
+test('with nothing selected there is no skip, so x dismisses nothing', async ($, on) => {
+  const held = store(on)
   seed(on, { snapshot: SAMPLE, reduceMotion: true })
   const ui = await $.ui.mount(paneAt(60))
-  await ui.press({ key: 'item:ask:s1:q1' })
+  expect(await ui.find({ key: 'dismiss' })).toBeUndefined()
+  expect(await ui.find({ key: 'open' })).toBeUndefined()
+  expect(await ui.find({ type: 'Text', text: /This push goes to main/ })).toBeDefined()
+  expect(held.dismissed).toBeUndefined()
+  await ui.unmount()
+})
+
+test('details stay hidden until an item is pressed; a second press hides them', async ($, on) => {
+  seed(on, { snapshot: SAMPLE, reduceMotion: true })
+  const ui = await $.ui.mount(paneAt(60))
   expect(await ui.find({ type: 'Text', text: /• Blue/ })).toBeUndefined()
   await ui.press({ key: 'item:ask:s1:q1' })
   expect(await ui.find({ type: 'Text', text: /• Blue/ })).toBeDefined()
+  await ui.press({ key: 'item:ask:s1:q1' })
+  expect(await ui.find({ type: 'Text', text: /• Blue/ })).toBeUndefined()
+  await ui.press({ key: 'open' })
+  expect(await ui.find({ type: 'Text', text: /• Blue/ })).toBeDefined()
+  await ui.unmount()
+})
+
+test('only one item is open at a time', async ($, on) => {
+  seed(on, { snapshot: SAMPLE, reduceMotion: true })
+  const ui = await $.ui.mount(paneAt(60))
+  await ui.press({ key: 'item:ask:s1:q1' })
+  await ui.press({ key: 'item:done:s3:a1' })
+  expect(await ui.find({ type: 'Text', text: /• Blue/ })).toBeUndefined()
+  expect(await ui.find({ type: 'Text', text: /report is ready/ })).toBeDefined()
   await ui.unmount()
 })
 
@@ -213,8 +240,11 @@ for (const theme of THEMES) {
         expect(held.keyOpen).toBe(true)
       }
       expect(await ui.find({ type: 'Text', text: LEGEND[theme] })).toBeDefined()
-      expect(await ui.find({ type: 'Text', text: /t design/ })).toBeDefined()
-      expect(await ui.find({ type: 'Text', text: /k key/ })).toBeDefined()
+      expect(await ui.find({ key: 'design' })).toBeDefined()
+      expect(await ui.find({ key: 'motion' })).toBeDefined()
+      expect(await ui.find({ key: 'refresh' })).toBeDefined()
+      expect(await ui.find({ type: 'Text', text: /o open · x skip · k key/ })).toBeDefined()
+      expect(await ui.find({ type: 'Text', text: /^  ctrl\+x tab: panel · esc: chat/ })).toBeDefined()
       await ui.unmount()
     }
     const ui = await $.ui.mount(paneAt(60))
@@ -265,5 +295,41 @@ test('no skills row when nothing changed today', async ($, on) => {
   seed(on, { snapshot: EMPTY_SNAP, reduceMotion: true })
   const ui = await $.ui.mount(paneAt(60))
   expect(await ui.find({ key: 'skills' })).toBeUndefined()
+  await ui.unmount()
+})
+
+const rowText = (r: Row) => r.segs.map(x => ('t' in x ? x.t : 'btn' in x ? x.segs.map(y => y.t).join('') : '')).join('')
+
+for (const theme of THEMES) {
+  for (const W of [48, 36]) {
+    test(`${theme} at ${W}: items are spaced out, title and meta on their own rows`, () => {
+      const look = buildLook({ ...ctx(theme, W, SAMPLE), isDetailOpen: false, isKeyOpen: false, isSkillsOpen: false })
+      const titles = look.rows.map((r, i) => [r, i] as const).filter(([r]) => r.press)
+      expect(titles.length).toBe(4)
+      for (const [r, i] of titles) {
+        // the title row holds no age; the meta row under it does
+        expect(/ (now|\d+m)$/.test(rowText(r).trimEnd())).toBe(false)
+        expect(rowText(look.rows[i + 1]!)).toMatch(/· (now|\d+m)/)
+      }
+      // a spacer row between items: nothing but blanks and rails
+      for (const [, i] of titles.slice(1)) expect(rowText(look.rows[i - 1]!).replace(/[ ┃]/g, '')).toBe('')
+    })
+
+    test(`${theme} at ${W}: the switch rows are gone; the bottom line shows the focus keys and the key button`, () => {
+      const look = buildLook({ ...ctx(theme, W, SAMPLE), isKeyOpen: false })
+      const all = look.rows.map(r => r.segs.map(x => ('t' in x ? x.t : 'btn' in x ? `[${x.btn}]` : '')).join(''))
+      expect(all.some(l => /tab move|MOTION|REFRESH|DESIGN/.test(l))).toBe(false)
+      const last = all[all.length - 1]!
+      expect(last.startsWith('ctrl+x tab: panel · esc: chat')).toBe(true)
+      expect(last.endsWith('[key]')).toBe(true)
+    })
+  }
+}
+
+test('the focus keys line is faint', async ($, on) => {
+  seed(on, { snapshot: SAMPLE, reduceMotion: true })
+  const ui = await $.ui.mount(paneAt(60))
+  const focus = await ui.find({ type: 'Text', text: /^ctrl\+x tab: panel · esc: chat$/ })
+  expect(focus?.props).toEqual(expect.objectContaining({ color: '#6E6896' }))
   await ui.unmount()
 })

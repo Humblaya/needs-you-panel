@@ -6,7 +6,7 @@ import type { Elements } from 'claude-code'
 export type Action =
   | { type: 'select'; id: string }
   | { type: 'open' }
-  | { type: 'dismiss' }
+  | { type: 'dismiss'; id: string }
   | { type: 'theme' }
   | { type: 'motion' }
   | { type: 'refresh' }

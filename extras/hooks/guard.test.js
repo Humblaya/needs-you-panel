@@ -119,6 +119,28 @@ const logCases = [
     try { logDecision({ decision: "ask", reason: "r" }, "C:/a", pathMod.join(logFile, "not-a-dir", "x.jsonl"), 5000); return true; }
     catch { return false; }
   }],
+  ["a secret-file deny is logged without the file's name", () => {
+    const r = decide("git add config/.env.local", "C:/tmp", F);
+    logDecision(r, "C:/a", logFile, 6000);
+    const lines = fs.readFileSync(logFile, "utf8").trim().split("\n");
+    const o = JSON.parse(lines[lines.length - 1]);
+    return r.reason.includes(".env.local") && o.decision === "deny" && !o.reason.includes(".env") && !o.reason.includes("config");
+  }],
+  ["a log over 1 MB keeps only its last 2000 lines", () => {
+    const big = pathMod.join(tmp, "big.jsonl");
+    fs.writeFileSync(big, Array.from({ length: 3000 }, (_, i) => JSON.stringify({ n: i, pad: "x".repeat(400) })).join("\n") + "\n");
+    logDecision({ decision: "ask", reason: "r." }, "C:/a", big, 7000);
+    const lines = fs.readFileSync(big, "utf8").trim().split("\n");
+    return lines.length <= 2001 && lines.length >= 1999 && JSON.parse(lines[lines.length - 1]).decision === "ask";
+  }],
+  ["the log goes under CLAUDE_CONFIG_DIR when it is set", () => {
+    const dir = pathMod.join(tmp, "config");
+    require("child_process").execFileSync(process.execPath, [pathMod.join(__dirname, "guard.js")], {
+      input: JSON.stringify({ tool_input: { command: "gh pr merge 1" }, cwd: "C:/code/app" }),
+      env: { ...process.env, CLAUDE_CONFIG_DIR: dir },
+    });
+    return JSON.parse(fs.readFileSync(pathMod.join(dir, "needs-you", "guard.jsonl"), "utf8")).project === "app";
+  }],
 ];
 for (const [name, check] of logCases) {
   let ok = false;

@@ -4,7 +4,8 @@
 // to main/master, merging pull requests, force pushes. Denies: staging or
 // committing secrets/keys/personal settings files, and running a download
 // straight in a shell. Every ask or deny is also written as one line to
-// ~/.claude/needs-you/guard.jsonl for the Needs You panel.
+// <config dir>/needs-you/guard.jsonl for the Needs You panel (the config dir is
+// CLAUDE_CONFIG_DIR, else ~/.claude); past about 1 MB it keeps its last 2000 lines.
 // Fails open (allows) on any internal error.
 
 const fs = require("fs");
@@ -69,7 +70,8 @@ function gitFiles(dir, args) {
   } catch { return []; }
 }
 
-const deny = (reason) => ({ decision: "deny", reason });
+// logReason: what the decision log keeps instead of `reason` (no file names).
+const deny = (reason, logReason) => ({ decision: "deny", reason, ...(logReason ? { logReason } : {}) });
 const ask = (reason) => ({ decision: "ask", reason });
 
 function checkGit(t, dir, env) {
@@ -114,7 +116,7 @@ function checkGit(t, dir, env) {
     for (const a of args) {
       if (a.startsWith("-")) continue;
       if (SECRET_FILE.test(a.replace(/,$/, "")) || a.split(",").some((p) => SECRET_FILE.test(p))) {
-        return deny(`"${a}" looks like a secret, key or personal settings file. Ask the person first.`);
+        return deny(`"${a}" looks like a secret, key or personal settings file. Ask the person first.`, "Staging a file that looks like a secret or key was blocked.");
       }
     }
     return null;
@@ -125,7 +127,7 @@ function checkGit(t, dir, env) {
     const all = args.some((a) => a === "-a" || a === "--all" || /^-[a-z]*a[a-z]*$/i.test(a) && !a.startsWith("--"));
     const files = env.staged(dir).concat(all ? env.modified(dir) : []);
     const bad = files.find((f) => SECRET_FILE.test(f));
-    if (bad) return deny(`"${bad}" is about to be committed and looks like a secret, key or personal settings file. Unstage it (git restore --staged) or ask the person.`);
+    if (bad) return deny(`"${bad}" is about to be committed and looks like a secret, key or personal settings file. Unstage it (git restore --staged) or ask the person.`, "Committing a file that looks like a secret or key was blocked.");
     return null;
   }
   return null;
@@ -171,14 +173,22 @@ function decide(command, cwd, env) {
 // One JSON line per ask or deny for the Needs You panel: time, decision,
 // the reason's first sentence and the project folder's name. Never the
 // command. Any error is swallowed so the guard still fails open.
-const DECISION_LOG = path.join(require("os").homedir(), ".claude", "needs-you", "guard.jsonl");
+const CONFIG_DIR = process.env.CLAUDE_CONFIG_DIR || path.join(require("os").homedir(), ".claude");
+const DECISION_LOG = path.join(CONFIG_DIR, "needs-you", "guard.jsonl");
+const LOG_MAX_BYTES = 1000000;
+const LOG_KEEP_LINES = 2000;
 function logDecision(result, cwd, file = DECISION_LOG, now = Date.now()) {
   try {
     if (!result || (result.decision !== "ask" && result.decision !== "deny")) return;
-    const reason = String(result.reason || "").split(/(?<=\.)\s/)[0].slice(0, 80);
+    const reason = String(result.logReason || result.reason || "").split(/(?<=\.)\s/)[0].slice(0, 80);
     const project = path.basename(String(cwd || "").replace(/[\/\\]+$/, ""));
     fs.mkdirSync(path.dirname(file), { recursive: true });
     fs.appendFileSync(file, JSON.stringify({ time: new Date(now).toISOString(), decision: result.decision, reason, project }) + "\n");
+    // keep the log small: past about 1 MB, only its last 2000 lines stay
+    if (fs.statSync(file).size > LOG_MAX_BYTES) {
+      const lines = fs.readFileSync(file, "utf8").split("\n").filter(Boolean);
+      fs.writeFileSync(file, lines.slice(-LOG_KEEP_LINES).join("\n") + "\n");
+    }
   } catch {}
 }
 

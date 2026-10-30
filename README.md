@@ -7,9 +7,9 @@ A mod for [Claude Code](https://code.claude.com) that keeps a **Needs You** pane
 3. **Running**: sub-agents that are working right now.
 4. **Today**: how many times your guard hook asked or blocked today, how many agent runs finished, and any skills installed or removed today.
 
-It comes in four looks, and a **change design** button (or the `t` key) switches between them. Your choice is remembered for the next session.
+It comes in four looks, switched with the **DESIGN** button in the key (or the `t` key). Your choice is remembered for the next session.
 
-It makes no model calls. It reads only files that changed since its last look, does a small amount of work per tick, and stops working while the pane is hidden.
+It makes no model calls. It reads only files that changed since its last look, lists the project folders at most every 15 seconds, reads a big, busy session again at most every 20 seconds, and stops working while the pane is hidden.
 
 ## The four looks
 
@@ -22,18 +22,20 @@ Every item is a level to clear; an empty list says **STAGE CLEAR**.
 ▄████████▄  NEEDS YOU                      HI 04
 ██████████  4 need you · 3 ready · 2 running
 ██████████
- ██▀▀▀▀▀▀   PRESS O TO OPEN · X TO SKIP
+ ██▀▀▀▀▀▀   TAB TO PICK · ENTER TO OPEN
 
  1  NEEDS YOU ································ 4
-▶  APPROVE  This push goes to main.          now
-            guard · demo-app
-            o: OPEN  x: SKIP
-   ASKS     Which colour should the button…   2m
-            Colour picker work · demo-app
-   FAILED   Bash failed                       5m
-            Test run · sample-site
-   DONE     The report is ready.             18m
-            Report writer · notes
+   APPROVE  This push goes to main.
+            guard · demo-app · now
+
+   ASKS     Which colour should the button be?
+            Colour picker work · demo-app · 2m
+
+   FAILED   Bash failed
+            Test run · sample-site · 5m
+
+   DONE     The report is ready.
+            Report writer · notes · 18m
 
  2  READY ··················· 3 open, not merged
   #12  parser        Add a parser        ✓ 20/20
@@ -47,8 +49,7 @@ Every item is a level to clear; an empty list says **STAGE CLEAR**.
  4  TODAY ·····································
   blocked 2 · asked 3 · runs 9
 
-t: DESIGN ▸ HI-SCORE m: MOTION OFF r: REFRESH
-tab move · enter select · o open · x skip k: key
+ctrl+x tab: panel · esc: chat             k: key
 ```
 
 ### Halo: a heads-up display
@@ -60,31 +61,38 @@ Corner brackets, a reticle and a threat meter that fills with each waiting item;
  █  ██  █  4 open · 3 PRs · 2 agents      14:02
   ▀▄▄▄▄▀   link ok · synced just now
 └─                                            ─┘
+
 ▸ NEEDS YOU [04] ───────────────────────────────
-▌◉ APPROVE  This push goes to main.         now
-▌ └ guard › demo-app
-▌   o: OPEN  x: SKIP
- ◉ ASKS     Which colour should the butto…   2m
-  └ Colour picker work › demo-app
- ◉ FAILED   Bash failed                      5m
-  └ Test run › sample-site
- ○ DONE     The report is ready.            18m
-  └ Report writer › notes
+ ◉ APPROVE  This push goes to main.
+  └ guard · demo-app · now
+
+ ◉ ASKS     Which colour should the button be?
+  └ Colour picker work · demo-app · 2m
+
+ ◉ FAILED   Bash failed
+  └ Test run · sample-site · 5m
+
+ ○ DONE     The report is ready.
+  └ Report writer · notes · 18m
+
 ▸ READY [03] ───────────────────────────────────
   parser #12        ▰▰▰▰▰▰▰▰▰▰            20/20
    └ Add a parser · not merged
+
   app #42           ▰▰▰▰▰▰▰▰▰▱            14/16
    └ Fix the streak count · not merged
+
   site #7           ▰▰▰▰▰▱▱▱▱▱             6/11
    └ New header · not merged
+
 ▸ RUNNING [02] ─────────────────────────────────
   ⠋ Explore        demo-app                 12m
   ⠋ reviewer       notes                     3m
+
 ▸ TODAY [··] ───────────────────────────────────
   guard 2 blocked · 3 asked · 9 runs
 
-t: DESIGN ▸ HALO m: MOTION OFF r: REFRESH
-tab move · enter select · o open · x skip k: key
+ctrl+x tab: panel · esc: chat             k: key
 ```
 
 ### Metro: a transit map
@@ -95,15 +103,17 @@ Each section is a coloured line, each item a stop, and running agents are a trai
 ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
 
  N  NEEDS YOU  line N · 4 stops
- ●  This push goes to main.                  now
- ┃  approve · guard · demo-app
- ┃  o: OPEN  x: SKIP
- ●  Which colour should the button be?        2m
- ┃  asks · Colour picker work · demo-app
- ×  Bash failed                               5m
- ┃  failed · Test run · sample-site
- ○  The report is ready.                     18m
- ╹  done · Report writer · notes
+ ●  This push goes to main.
+ ┃  guard · demo-app · now
+ ┃
+ ●  Which colour should the button be?
+ ┃  Colour picker work · demo-app · 2m
+ ┃
+ ×  Bash failed
+ ┃  Test run · sample-site · 5m
+ ┃
+ ○  The report is ready.
+ ╹  Report writer · notes · 18m
 
  R  READY  line R · not merged
  ┃  #12  parser        Add a parser      ✓ 20/20
@@ -118,8 +128,7 @@ Each section is a coloured line, each item a stop, and running agents are a trai
  T  TODAY
  ╹  blocked 2 · asked 3 · runs 9
 
-t: DESIGN ▸ METRO m: MOTION OFF r: REFRESH
-tab move · enter select · o open · x skip k: key
+ctrl+x tab: panel · esc: chat             k: key
 ```
 
 ### Thermal: a heat camera
@@ -132,15 +141,17 @@ NEEDS YOU  core 4°         hot 4  warm 3  cool 2
 -24h                              activity · now
 
 HOT · needs you                                4
-██ approve  This push goes to main.          now
-██          guard · demo-app
-▀▀          o: OPEN  x: SKIP
-██ asks     Which colour should the button…   2m
-██          Colour picker work · demo-app
-██ failed   Bash failed                       5m
-██          Test run · sample-site
-██ done     The report is ready.             18m
-██          Report writer · notes
+██ approve  This push goes to main.
+██          guard · demo-app · now
+
+██ asks     Which colour should the button be?
+██          Colour picker work · demo-app · 2m
+
+██ failed   Bash failed
+██          Test run · sample-site · 5m
+
+██ done     The report is ready.
+██          Report writer · notes · 18m
 
 WARM · ready, not merged                       3
 ▐▌ #12  parser        Add a parser       ✓ 20/20
@@ -153,8 +164,7 @@ COOL · running                                 2
 
 TODAY blocked 2 · asked 3 · runs 9
 
-t: DESIGN ▸ THERMAL m: MOTION OFF r: REFRESH
-tab move · enter select · o open · x skip k: key
+ctrl+x tab: panel · esc: chat             k: key
 ```
 
 ## Install
@@ -178,13 +188,26 @@ In the desktop app, where `/plugin` does not run: click + next to the prompt box
 ## Use
 
 - The pane opens by itself beside the chat when the terminal is wide enough (Claude Code docks it in fullscreen mode). Type `/needs-you` to open it at any width and give it the keyboard.
-- **Tab** moves between items and buttons. **Enter** on an item selects it; Enter again shows its details.
-- **o** opens or closes the selected item's details, **x** skips (hides) it. Skipped items stay hidden in later sessions.
-- **t** changes the design, **m** turns motion on or off (Reduce motion), **r** refreshes now.
-- The small, dim, underlined **key** button (or **k**) opens a short legend of what each colour and marker means in the current look, and the switches. Press it again to close it; it stays open or closed in later sessions.
+- **Moving between the chat and the panel:** `ctrl+x tab` gives the panel the keyboard and `esc` gives it back to the chat. These are Claude Code's own keys; the panel shows them on its bottom line.
+- **Tab** moves between items. **Enter** on an item opens its details; Enter again closes them. One item is open at a time.
+- The open item has **o** (open or close its details) and **x** (skip it). Skipped items stay hidden in later sessions. With no item picked, `x` does nothing.
+- The small, dim, underlined **key** button (or **k**) opens a short legend: what each colour and marker means in the current look, and the switches: **t** design, **m** motion on or off (Reduce motion), **r** refresh. These three work while the key is open. Press **key** again to close it; it stays open or closed in later sessions.
 - When skills changed today, Today shows a button such as **+3 skills**; press it to list their names.
 
-The keys work while the pane has the keyboard (after `/needs-you`, a click on the pane, or ctrl+x tab).
+The keys work while the pane has the keyboard (after `/needs-you`, a click on the pane, or `ctrl+x tab`).
+
+### A one-key shortcut to the panel (optional)
+
+A mod cannot add a key combination of its own; Claude Code reads those from `~/.claude/keybindings.json`. To reach the panel with one combination instead of `ctrl+x tab`, bind Claude Code's own `abovePrompt:focus` action, for example to `alt+n` (no Claude Code or Windows Terminal default uses it):
+
+```json
+{
+  "$schema": "https://www.schemastore.org/claude-code-keybindings.json",
+  "bindings": [{ "context": "Chat", "bindings": { "alt+n": "abovePrompt:focus" } }]
+}
+```
+
+Merge it into the file if you already have one. `esc` still takes you back to the chat.
 
 ## Where the data comes from
 
@@ -193,12 +216,12 @@ The keys work while the pane has the keyboard (after `/needs-you`, a click on th
 | Open questions | Claude Code transcripts in `~/.claude/projects/*/*.jsonl` changed in the last 14 days: an `AskUserQuestion` call with no answer yet |
 | Failed runs | The same transcripts: the last thing in a session is a failed tool result, and nothing came after it for 30 seconds (failures you caused by interrupting are left out) |
 | Finished work | The same transcripts: the session ends on a finished turn that came after the panel was first installed, and you have not skipped it (the session you are in is left out) |
-| Guard approvals | `~/.claude/needs-you/guard.jsonl`, written by the optional guard hook below; asks from the last 10 minutes are listed |
+| Guard approvals | `<config>/needs-you/guard.jsonl`, written by the optional guard hook below; asks from the last 10 minutes are listed |
 | Ready | `gh search prs --author @me --state open`, then `gh pr checks` for each (up to 10), at most every 2 minutes or when you press `r` |
-| Running | `~/.claude/needs-you/agents.jsonl`, written by the optional agent hook below: agents that started and have not stopped (older than 2 hours counts as stale and is left out) |
-| Today | The two log files above, and `~/.claude/needs-you/skills.json` when present |
+| Running | `<config>/needs-you/agents.jsonl`, written by the optional agent hook below: agents that started and have not stopped (older than 2 hours counts as stale and is left out) |
+| Today | The two log files above, and `<config>/needs-you/skills.json` when present |
 
-Transcripts bigger than 4 MB are read from their last 1 MB, using `tail` or, where that is missing (as on Windows), `node`.
+`<config>` is the folder in `CLAUDE_CONFIG_DIR` when that is set, else `~/.claude`; the panel and the example hooks use the same rule. Transcripts and logs bigger than 4 MB are read from their last 1 MB, using `tail` or, where that is missing (as on Windows), `node`. The example hooks keep their logs small: past about 1 MB a log keeps only its last 2000 lines.
 
 ## Optional hook scripts
 
@@ -219,7 +242,7 @@ The Running, Today and guard-approval parts need two small logs that Claude Code
 
 ### skills.json: an optional input any hook can write
 
-The panel also reads `~/.claude/needs-you/skills.json`, if it exists. Any script of yours (for example a SessionStart hook that notices new skills) can write it:
+The panel also reads `<config>/needs-you/skills.json`, if it exists. Any script of yours (for example a SessionStart hook that notices new skills) can write it:
 
 ```json
 { "time": "2026-01-05T09:30:00.000Z", "added": ["skill-one", "skill-two"], "removed": ["old-skill"] }

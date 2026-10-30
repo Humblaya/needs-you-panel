@@ -9,7 +9,7 @@ import type { Ready, Snapshot, ThemeId } from '../types'
 import type { Action } from './cells'
 import { drawRows } from './cells'
 import type { Transcript } from './data'
-import { baseName, heatStrip, jsonLines, needsFromTranscript, parseAgents, parseChecks, parseGuardLog, parseSearch, parseSkills, parseTranscript } from './data'
+import { baseName, heatStrip, needsFromTranscript, parseAgents, parseChecks, parseGuardLog, parseSearch, parseSkills, parseTranscript } from './data'
 import { THEMES, backgroundOf, buildLook, nextTheme } from './themes'
 
 type $ = EngineInterface
@@ -21,6 +21,8 @@ const SCAN_MS = 5_000
 const GH_MS = 120_000
 const DAYS_MS = 14 * 86_400_000
 const FILES_PER_SCAN = 3
+const LIST_MS = 15_000
+const BIG_REREAD_MS = 20_000
 const READ_LIMIT = 4 * 1024 * 1024 - 1024
 const TAIL_BYTES = 1024 * 1024
 
@@ -64,8 +66,10 @@ let isScanning = false
 let isFetching = false
 let projectDirs: string[] = []
 let lastDirList = 0
+let lastFileList = 0
+let files: Array<{ path: string; mtimeMs: number; size: number; folder: string }> = []
 let tailer: 'tail' | 'node' | 'none' | undefined
-const transcripts = new Map<string, { mtimeMs: number; size: number; parsed: Transcript; folder: string }>()
+const transcripts = new Map<string, { mtimeMs: number; size: number; readAt: number; parsed: Transcript; folder: string }>()
 const logs = new Map<string, { mtimeMs: number; text: string }>()
 
 async function openPane($: $, focus: boolean) {
@@ -99,13 +103,13 @@ async function readTail($: $, path: string): Promise<string | undefined> {
   return undefined
 }
 
-/** A small log's text, read again only when its mtime changed. */
+/** A log's text, read again only when its mtime changed; a big one from its last 1 MB. */
 async function readLog($: $, path: string) {
   const st = await $.fs.stat(path).catch(() => undefined)
-  if (!st || st.kind !== 'file' || st.size > READ_LIMIT) return ''
+  if (!st || st.kind !== 'file') return ''
   const held = logs.get(path)
   if (held && held.mtimeMs === st.mtimeMs) return held.text
-  const text = await $.fs.read(path).catch(() => '')
+  const text = st.size <= READ_LIMIT ? await $.fs.read(path).catch(() => '') : ((await readTail($, path)) ?? '')
   logs.set(path, { mtimeMs: st.mtimeMs, text })
   return text
 }
@@ -117,24 +121,34 @@ async function scanTranscripts($: $, now: number) {
     const entries = await $.fs.list(base).catch(() => [])
     projectDirs = entries.filter(d => d.kind === 'dir').map(d => d.name)
   }
-  const files: Array<{ path: string; mtimeMs: number; size: number; folder: string }> = []
-  for (const folder of projectDirs) {
-    const entries = await $.fs.list(`${base}/${folder}`).catch(() => [])
-    for (const f of entries) {
-      if (f.kind === 'file' && f.name.endsWith('.jsonl') && now - f.mtimeMs < DAYS_MS) {
-        files.push({ path: `${base}/${folder}/${f.name}`, mtimeMs: f.mtimeMs, size: f.size, folder })
+  // each project folder is listed at most every 15 s
+  if (now - lastFileList >= LIST_MS) {
+    lastFileList = now
+    const found: typeof files = []
+    for (const folder of projectDirs) {
+      const entries = await $.fs.list(`${base}/${folder}`).catch(() => [])
+      for (const f of entries) {
+        if (f.kind === 'file' && f.name.endsWith('.jsonl') && now - f.mtimeMs < DAYS_MS) {
+          found.push({ path: `${base}/${folder}/${f.name}`, mtimeMs: f.mtimeMs, size: f.size, folder })
+        }
       }
     }
+    files = found
   }
   const live = new Set(files.map(f => f.path))
   for (const path of transcripts.keys()) if (!live.has(path)) transcripts.delete(path)
   const changed = files
-    .filter(f => transcripts.get(f.path)?.mtimeMs !== f.mtimeMs)
+    .filter(f => {
+      const held = transcripts.get(f.path)
+      if (!held) return true
+      // a big, busy session is read again at most every 20 s
+      return held.mtimeMs !== f.mtimeMs && (f.size <= READ_LIMIT || now - held.readAt >= BIG_REREAD_MS)
+    })
     .sort((a, b) => b.mtimeMs - a.mtimeMs)
     .slice(0, FILES_PER_SCAN)
   for (const f of changed) {
     const text = f.size <= READ_LIMIT ? await $.fs.read(f.path).catch(() => undefined) : await readTail($, f.path)
-    transcripts.set(f.path, { mtimeMs: f.mtimeMs, size: f.size, folder: f.folder, parsed: text === undefined ? {} : parseTranscript(text, { isTail: f.size > READ_LIMIT }) })
+    transcripts.set(f.path, { mtimeMs: f.mtimeMs, size: f.size, readAt: now, folder: f.folder, parsed: text === undefined ? {} : parseTranscript(text, { isTail: f.size > READ_LIMIT }) })
   }
 }
 
@@ -159,7 +173,6 @@ async function scan($: $) {
   const skillsText = await readLog($, `${root}/needs-you/skills.json`)
   const guard = parseGuardLog(guardText, now, dayStart)
   const agents = parseAgents(agentText, now, dayStart)
-  const times = [...jsonLines(guardText), ...jsonLines(agentText)].map(r => Date.parse(String(r.time))).filter(t => !Number.isNaN(t))
 
   const needs = [...items, ...guard.items].filter(i => !dismissed.has(i.id)).sort((a, b) => b.at - a.at)
   await update($, snapshot, s => ({
@@ -167,7 +180,7 @@ async function scan($: $) {
     needs,
     running: agents.running,
     today: { asked: guard.asked, blocked: guard.blocked, runs: agents.runs, skills: parseSkills(skillsText, dayStart) },
-    heat: heatStrip(times, now, 48),
+    heat: heatStrip([...guard.times, ...agents.times], now, 48),
     at: now,
   }))
 }
@@ -218,21 +231,25 @@ async function tick($: $) {
 async function act($: $, a: Action) {
   if (a.type === 'select') {
     const was = await read($, selected)
+    // pressing an item opens it (one at a time); pressing it again closes it
     if (was === a.id) await update($, isDetailOpen, v => !v)
     else {
       await update($, selected, () => a.id)
-      await update($, isDetailOpen, () => false)
+      await update($, isDetailOpen, () => true)
     }
   }
-  if (a.type === 'open') await update($, isDetailOpen, v => !v)
-  if (a.type === 'dismiss') {
+  if (a.type === 'open') {
     const snap = await read($, snapshot)
     const sel = await read($, selected)
-    const item = snap.needs.find(i => i.id === sel) ?? snap.needs[0]
-    if (!item) return
-    dismissed.add(item.id)
+    if (snap.needs.some(i => i.id === sel)) await update($, isDetailOpen, v => !v)
+  }
+  if (a.type === 'dismiss') {
+    // only the item whose skip button was drawn, never a stand-in
+    const id = a.id
+    if (!id) return
+    dismissed.add(id)
     await $.store.set('dismissed', [...dismissed].slice(-500))
-    await update($, snapshot, s => ({ ...s, needs: s.needs.filter(i => i.id !== item.id) }))
+    await update($, snapshot, s => ({ ...s, needs: s.needs.filter(i => i.id !== id) }))
     await update($, selected, () => '')
     await update($, isDetailOpen, () => false)
   }
@@ -254,6 +271,7 @@ async function act($: $, a: Action) {
   if (a.type === 'skills') await update($, isSkillsOpen, v => !v)
   if (a.type === 'refresh') {
     lastScan = 0
+    lastFileList = 0
     lastGh = 0
     isShown = true
   }
@@ -287,6 +305,7 @@ export const register: Register = on => {
   on('command.run', { command: 'needs-you' }, async $ => {
     await openPane($, true)
     lastScan = 0
+    lastFileList = 0
     isShown = true
     return { text: 'Needs You pane opened.' }
   })

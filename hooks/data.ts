@@ -53,7 +53,7 @@ const blocks = (row: Json): Json[] => {
 }
 
 const resultText = (content: unknown): string => {
-  if (typeof content === 'string') return content
+  if (typeof content === 'string') return clean(content)
   if (Array.isArray(content)) return content.map(c => (isObj(c) ? str(c.text) : '')).join(' ')
   return ''
 }
@@ -154,13 +154,15 @@ export function needsFromTranscript(
   return items
 }
 
-/** Guard asks from the last ten minutes as items, plus today's ask and block counts. */
+/** Guard asks from the last ten minutes as items, today's ask and block counts, and every line's time. */
 export function parseGuardLog(text: string, now: number, dayStart: number) {
   const items: NeedItem[] = []
+  const times: number[] = []
   let asked = 0
   let blocked = 0
   for (const row of jsonLines(text)) {
     const at = time(row.time)
+    if (at) times.push(at)
     if (at >= dayStart) {
       if (row.decision === 'ask') asked += 1
       if (row.decision === 'deny') blocked += 1
@@ -177,15 +179,17 @@ export function parseGuardLog(text: string, now: number, dayStart: number) {
       })
     }
   }
-  return { items, asked, blocked }
+  return { items, asked, blocked, times }
 }
 
-/** Agents started and not yet stopped (younger than two hours), and today's finished runs. */
+/** Agents started and not yet stopped (younger than two hours), today's finished runs, and every line's time. */
 export function parseAgents(text: string, now: number, dayStart: number) {
   const open: RunningAgent[] = []
+  const times: number[] = []
   let runs = 0
   for (const row of jsonLines(text)) {
     const at = time(row.time)
+    if (at) times.push(at)
     const who = str(row.agent_type) || 'agent'
     const project = str(row.project)
     const id = str(row.agent_id)
@@ -204,7 +208,7 @@ export function parseAgents(text: string, now: number, dayStart: number) {
     }
   }
   const running = open.filter(a => now - a.at < STALE_AGENT_MS).sort((a, b) => b.at - a.at)
-  return { running, runs }
+  return { running, runs, times }
 }
 
 /** `gh search prs --json repository,number,title,url` output. */
