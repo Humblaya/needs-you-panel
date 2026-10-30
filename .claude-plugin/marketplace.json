@@ -1,0 +1,6 @@
+{
+  "name": "needs-you-panel",
+  "owner": { "name": "Humblaya" },
+  "metadata": { "description": "The Needs You pane for Claude Code: what is waiting on you, in four switchable looks." },
+  "plugins": [{ "name": "needs-you-panel", "source": "./" }]
+}
