@@ -1,0 +1,9 @@
+{
+  "name": "needs-you-panel",
+  "version": "0.1.0",
+  "description": "A pane beside the chat listing what needs you: open questions, failed runs, finished work, guard approvals, ready pull requests and running agents, in four switchable looks.",
+  "author": { "name": "Humblaya" },
+  "homepage": "https://github.com/Humblaya/needs-you-panel",
+  "license": "MIT",
+  "types": "./types/index.d.ts"
+}

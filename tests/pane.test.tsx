@@ -1,0 +1,191 @@
+import { expect, mock, test } from 'claude-code/testing'
+
+import type { On } from 'claude-code'
+
+import type { Snapshot, ThemeId } from '../types'
+import { rowWidth } from '../hooks/cells'
+import { THEMES, buildLook } from '../hooks/themes'
+
+const NOW = Date.parse('2026-01-05T12:00:00.000Z')
+
+// Generic sample data: no real people, projects or pull requests.
+const SAMPLE: Snapshot = {
+  needs: [
+    { id: 'guard:1', kind: 'approve', who: 'guard', title: 'This push goes to main.', project: 'demo-app', at: NOW - 10_000, detail: ['This push goes to main.'] },
+    { id: 'ask:s1:q1', kind: 'question', who: 'Colour picker work', title: 'Which colour should the button be?', project: 'demo-app', at: NOW - 120_000, detail: ['Which colour should the button be?', '• Red', '• Blue'] },
+    { id: 'fail:s2:1', kind: 'failed', who: 'Test run', title: 'Bash failed', project: 'sample-site', at: NOW - 300_000, detail: ['Exit code 1'] },
+    { id: 'done:s3:a1', kind: 'finished', who: 'Report writer', title: 'Turn finished', project: 'notes', at: NOW - 1_080_000, detail: ['The report is ready.'] },
+  ],
+  ready: {
+    status: 'ok',
+    at: NOW,
+    prs: [
+      { repo: 'example/parser', number: 12, title: 'Add a parser', url: 'https://github.com/example/parser/pull/12', pass: 20, fail: 0, running: 0, total: 20 },
+      { repo: 'example/app', number: 42, title: 'Fix the streak count', url: 'https://github.com/example/app/pull/42', pass: 14, fail: 2, running: 0, total: 16 },
+      { repo: 'example/site', number: 7, title: 'New header', url: 'https://github.com/example/site/pull/7', pass: 6, fail: 0, running: 5, total: 11 },
+    ],
+  },
+  running: [
+    { id: 'a1', who: 'Explore', project: 'demo-app', at: NOW - 720_000 },
+    { id: 'a2', who: 'reviewer', project: 'notes', at: NOW - 180_000 },
+  ],
+  today: { asked: 3, blocked: 2, runs: 9 },
+  heat: [0, 1, 2, 3, 4, 2, 1, 0, 3, 4],
+  at: NOW - 3_000,
+}
+
+const EMPTY_SNAP: Snapshot = { ...SAMPLE, needs: [] }
+
+const paneAt = (columns: number) =>
+  ({
+    plugin: 'needs-you-panel',
+    component: 'Pane',
+    requestId: 'needs-you',
+    surface: 'terminal',
+    props: { title: 'Needs you', isFocused: true, bodyColumns: columns, placement: 'dock', scroll: { offset: 0, bodyRows: 60 }, view: {} },
+  }) as const
+
+
+
+/**
+ * Seeds the panel's session values as an earlier run would have left them:
+ * each seed shows only until the panel writes that value itself.
+ */
+function seed(on: On, values: { snapshot?: Snapshot; theme?: ThemeId; reduceMotion?: boolean }) {
+  mock.clock(on, { now: NOW })
+  const seeds: Record<string, unknown> = {}
+  if (values.snapshot) seeds.snapshot = { shape: 'snapshot-1', value: values.snapshot }
+  if (values.theme) seeds.theme = values.theme
+  if (values.reduceMotion !== undefined) seeds.reduceMotion = values.reduceMotion
+  on('state.get', async ($, e, next) => {
+    const below = await next(e)
+    if (!(e.key in seeds) || !('value' in below) || (below.value?.version ?? 0) > 0) return below
+    return { value: { value: seeds[e.key], version: 0 } }
+  })
+}
+
+/** A store in memory the test can read back. */
+function store(on: On, start: Record<string, unknown> = {}) {
+  const held: Record<string, unknown> = { ...start }
+  on('store.get', (_, e) => ({ value: held[e.key] }))
+  on('store.set', (_, e) => {
+    held[e.key] = e.value
+    return { value: undefined }
+  })
+  return held
+}
+
+const ctx = (theme: ThemeId, W: number, snap: Snapshot) => ({
+  W,
+  narrow: W < 48,
+  snap,
+  selected: '',
+  isDetailOpen: true,
+  frame: 7,
+  motion: true,
+  now: NOW,
+  theme,
+})
+
+for (const theme of THEMES) {
+  for (const W of [48, 36]) {
+    test(`${theme} at ${W} columns: every row is exactly ${W} cells`, () => {
+      for (const snap of [SAMPLE, EMPTY_SNAP]) {
+        const look = buildLook(ctx(theme, W, snap))
+        const wrong = look.rows.map((r, i) => [i, rowWidth(r.segs)]).filter(([, w]) => w !== W)
+        expect(wrong).toEqual([])
+      }
+    })
+  }
+}
+
+const HEADS: Record<ThemeId, { wide: RegExp; narrow: RegExp; empty: RegExp }> = {
+  hiscore: { wide: /^NEEDS YOU$/, narrow: /^◆$/, empty: /STAGE CLEAR/ },
+  halo: { wide: /N E E D S {2}Y O U/, narrow: /^ NEEDS YOU$/, empty: /ALL SECTORS CLEAR/ },
+  metro: { wide: /◉ NEEDS YOU/, narrow: /◉ NEEDS YOU/, empty: /End of the line/ },
+  thermal: { wide: /^NEEDS YOU$/, narrow: /^NEEDS YOU$/, empty: /cooled down/ },
+}
+
+for (const theme of THEMES) {
+  test(`${theme} draws on the terminal at 48 and 36 columns, items and empty state`, async ($, on) => {
+    seed(on, { snapshot: SAMPLE, theme, reduceMotion: true })
+    for (const [cols, head] of [[60, HEADS[theme].wide], [40, HEADS[theme].narrow]] as const) {
+      const ui = await $.ui.mount(paneAt(cols))
+      expect(await ui.find({ type: 'Text', text: head })).toBeDefined()
+      expect(await ui.find({ type: 'Text', text: /This push goes to/ })).toBeDefined()
+      expect(await ui.find({ type: 'Text', text: /parser/ })).toBeDefined()
+      expect(await ui.find({ type: 'Text', text: /Explore/ })).toBeDefined()
+      expect(await ui.find({ key: 'design' })).toBeDefined()
+      await ui.unmount()
+    }
+  })
+
+  test(`${theme} shows its empty state when nothing needs you`, async ($, on) => {
+    seed(on, { snapshot: EMPTY_SNAP, theme, reduceMotion: true })
+    const ui = await $.ui.mount(paneAt(60))
+    expect(await ui.find({ type: 'Text', text: HEADS[theme].empty })).toBeDefined()
+    expect(await ui.find({ type: 'Text', text: /Nothing needs you/ })).toBeDefined()
+    await ui.unmount()
+  })
+}
+
+test('the design button cycles the look and stores the choice', async ($, on) => {
+  const held = store(on)
+  on('ui.open', () => ({ value: { isPlaced: true } }))
+  seed(on, { snapshot: SAMPLE, reduceMotion: true })
+  const ui = await $.ui.mount(paneAt(60))
+  expect(await ui.find({ type: 'Text', text: /DESIGN ▸ HI-SCORE/ })).toBeDefined()
+  await ui.press({ key: 'design' })
+  expect(await ui.find({ type: 'Text', text: /DESIGN ▸ HALO/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /N E E D S/ })).toBeDefined()
+  expect(held.theme).toBe('halo')
+  for (const name of ['METRO', 'THERMAL', 'HI-SCORE']) {
+    await ui.press({ key: 'design' })
+    expect(await ui.find({ type: 'Text', text: new RegExp(`DESIGN ▸ ${name}`) })).toBeDefined()
+  }
+  await ui.unmount()
+})
+
+test('a stored look is used when the next session starts', async ($, on) => {
+  store(on, { theme: 'thermal', reduceMotion: true, since: 1 })
+  mock.clock(on, { now: NOW })
+  on('session.start', (_, e) => ({ cwd: e.cwd }))
+  on('command.register', () => ({ value: { command: 'needs-you' } }))
+  on('session.id', () => ({ value: 'session-1' }))
+  on('ui.open', () => ({ value: { isPlaced: true } }))
+  await $.session.start({ cwd: '/', surface: 'terminal', isInteractive: true })
+  const ui = await $.ui.mount(paneAt(60))
+  expect(await ui.find({ type: 'Text', text: /DESIGN ▸ THERMAL/ })).toBeDefined()
+  await ui.unmount()
+})
+
+test('the motion button turns motion off and stores it', async ($, on) => {
+  const held = store(on)
+  seed(on, { snapshot: SAMPLE })
+  const ui = await $.ui.mount(paneAt(60))
+  expect(await ui.find({ type: 'Text', text: /MOTION ON/ })).toBeDefined()
+  await ui.press({ key: 'motion' })
+  expect(await ui.find({ type: 'Text', text: /MOTION OFF/ })).toBeDefined()
+  expect(held.reduceMotion).toBe(true)
+  await ui.unmount()
+})
+
+test('skip hides the selected item and remembers it', async ($, on) => {
+  const held = store(on)
+  seed(on, { snapshot: SAMPLE, reduceMotion: true })
+  const ui = await $.ui.mount(paneAt(60))
+  await ui.press({ key: 'dismiss' })
+  expect(await ui.find({ type: 'Text', text: /This push goes to main/ })).toBeUndefined()
+  expect(held.dismissed).toEqual(['guard:1'])
+  await ui.unmount()
+})
+
+test('pressing an item selects it and pressing again opens its details', async ($, on) => {
+  seed(on, { snapshot: SAMPLE, reduceMotion: true })
+  const ui = await $.ui.mount(paneAt(60))
+  await ui.press({ key: 'item:ask:s1:q1' })
+  expect(await ui.find({ type: 'Text', text: /• Blue/ })).toBeUndefined()
+  await ui.press({ key: 'item:ask:s1:q1' })
+  expect(await ui.find({ type: 'Text', text: /• Blue/ })).toBeDefined()
+  await ui.unmount()
+})
