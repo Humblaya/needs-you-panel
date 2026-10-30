@@ -1,8 +1,8 @@
 // The four looks. Each builds the same sections (Needs you, Ready, Running,
 // Today) as rows of cells, 48 columns wide or 36 when narrow.
 import type { NeedItem, NeedKind, Pr, Snapshot, ThemeId } from '../types'
-import type { Row, Seg, TextSeg } from './cells'
-import { S, fit, line, lr, pad, pixels, rpad } from './cells'
+import type { PxSeg, Row, Seg, TextSeg } from './cells'
+import { S, fit, line, lr, pad, pixels, rpad, segWidth } from './cells'
 import { ageLabel } from './data'
 
 export const THEMES: ThemeId[] = ['hiscore', 'halo', 'metro', 'thermal']
@@ -131,35 +131,88 @@ function readyMessage(c: Ctx): string | undefined {
 /** A glyph in its colour and what it means, for the key. */
 type Meaning = [glyph: string, colour: string, meaning: string]
 
-/**
- * The switches, the hint line with the small key button, and, while the key
- * is open, what each colour means in this look and what each switch does.
- */
-/** The keys that move between the chat and the panel (Claude Code's own). */
-export const FOCUS_KEYS = 'ctrl+x tab: panel · esc: chat'
+// A 3×5 pixel font for section names. A terminal draws one font size, so big
+// letters are drawn with half blocks: each letter is 3 cells wide, 3 rows tall.
+const FONT: Record<string, string[]> = {
+  A: ['010', '101', '111', '101', '101'],
+  C: ['011', '100', '100', '100', '011'],
+  D: ['110', '101', '101', '101', '110'],
+  E: ['111', '100', '110', '100', '111'],
+  G: ['011', '100', '101', '101', '011'],
+  H: ['101', '101', '111', '101', '101'],
+  I: ['111', '010', '010', '010', '111'],
+  L: ['100', '100', '100', '100', '111'],
+  M: ['101', '111', '111', '101', '101'],
+  N: ['110', '101', '101', '101', '101'],
+  O: ['010', '101', '101', '101', '010'],
+  R: ['110', '101', '110', '101', '101'],
+  S: ['011', '100', '010', '001', '110'],
+  T: ['111', '010', '010', '010', '010'],
+  U: ['101', '101', '101', '101', '111'],
+  W: ['101', '101', '111', '111', '101'],
+  Y: ['101', '101', '010', '010', '010'],
+}
 
+/** A word in big pixel letters: three rows of half blocks in `colour` over `ground`. */
+export function bigWord(word: string, colour: string, ground: string): PxSeg[] {
+  const grid = ['', '', '', '', '', '']
+  const chars = [...word.toUpperCase()]
+  chars.forEach((ch, i) => {
+    const glyph = FONT[ch]
+    for (let y = 0; y < 6; y++) {
+      grid[y] += glyph ? (glyph[y] ?? '000').replace(/0/g, '.').replace(/1/g, 'x') : '..'
+      if (glyph && i < chars.length - 1 && FONT[chars[i + 1] ?? ''] !== undefined) grid[y] += '.'
+    }
+  })
+  return pixels(grid, { x: colour }, ground)
+}
+
+/**
+ * A section header in big letters: \`lead\` and \`right\` sit on its middle
+ * row. Where it would not fit, \`right\` goes; where even the word does not
+ * fit, the theme's own one-row header (\`small\`) is used instead.
+ */
+function bigSec(W: number, word: string, colour: string, ground: string, lead: Seg[], right: Seg[], small: Row): Row[] {
+  const px = bigWord(word, colour, ground)
+  const width = (segs: Seg[]) => segs.reduce((n, x) => n + segWidth(x), 0)
+  const pxW = px[0]?.px.length ?? 0
+  if (width(lead) + pxW > W) return [small]
+  const r = width(lead) + pxW + 1 + width(right) <= W ? right : []
+  const blank = S(' '.repeat(width(lead)))
+  return px.map((p, i) => (i === 1 ? lr(W, [...lead, p], r.length ? [S(' '), ...r] : []) : line(W, [blank, p])))
+}
+
+/** The keys that move between the chat and the panel: alt+n runs /needs-you (a keybinding), esc returns. */
+export const FOCUS_KEYS = 'alt+n: panel · esc: chat'
+
+/**
+ * The bottom bar: small lowercase design and refresh buttons with the key
+ * button at the right, then the faint focus-keys line. While the key is open,
+ * what each colour means in this look, the motion switch, and how the buttons work.
+ */
 function controls(c: Ctx, accent: string, dim: string, faint: string, meanings: Meaning[]): Row[] {
-  const name = THEME_NAMES[c.theme].toUpperCase()
-  // the bottom line: how to reach the panel, faint, with the small key button at its right
   const rows = [
-    lr(c.W, [S(FOCUS_KEYS, { fg: faint })], [S(' '), { btn: 'key', hotkey: 'k', act: { type: 'key' }, segs: [S('key', { fg: faint, u: true })] }]),
+    lr(
+      c.W,
+      [
+        { btn: 'design', hotkey: 't', act: { type: 'theme' }, segs: [S('design', { fg: faint })] },
+        S('  '),
+        { btn: 'refresh', hotkey: 'r', act: { type: 'refresh' }, segs: [S('refresh', { fg: faint })] },
+      ],
+      [S(' '), { btn: 'key', hotkey: 'k', act: { type: 'key' }, segs: [S('key', { fg: faint, u: true })] }],
+    ),
+    line(c.W, [S(FOCUS_KEYS, { fg: faint })]),
   ]
   if (c.isKeyOpen) {
+    rows.push(line(c.W, []))
     for (const [glyph, colour, meaning] of meanings) {
       rows.push(line(c.W, [S('  '), S(glyph, { fg: colour }), S(' '), S(fit(meaning, c.W - 3 - [...glyph].length), { fg: dim })]))
     }
     rows.push(line(c.W, []))
-    rows.push(line(c.W, [S('  '), { btn: 'design', hotkey: 't', act: { type: 'theme' }, segs: [S(`DESIGN ▸ ${name}`, { fg: accent, b: true })] }]))
-    rows.push(
-      line(c.W, [
-        S('  '),
-        { btn: 'motion', hotkey: 'm', act: { type: 'motion' }, segs: [S(c.motion ? 'MOTION ON' : 'MOTION OFF', { fg: dim })] },
-        S('  '),
-        { btn: 'refresh', hotkey: 'r', act: { type: 'refresh' }, segs: [S('REFRESH', { fg: dim })] },
-      ]),
-    )
-    rows.push(line(c.W, [S('  tab move · enter open', { fg: faint })]))
-    rows.push(line(c.W, [S('  o open · x skip · k key', { fg: faint })]))
+    rows.push(line(c.W, [S('  press a button, or its letter', { fg: accent })]))
+    rows.push(line(c.W, [S('  tab moves · enter opens an item', { fg: dim })]))
+    rows.push(line(c.W, [S('  o open · x skip · t design', { fg: faint })]))
+    rows.push(line(c.W, [S('  r refresh · k key · ', { fg: faint }), { btn: 'motion', hotkey: 'm', act: { type: 'motion' }, segs: [S(c.motion ? 'motion on' : 'motion off', { fg: dim })] }]))
     rows.push(line(c.W, [S('  ' + FOCUS_KEYS, { fg: faint })]))
   }
   return rows
@@ -199,7 +252,15 @@ function hiscore(c: Ctx): Look {
   const n = snap.needs.length
 
   const sec = (num: number, label: string, col: string, right: string) =>
-    lr(W, [S(` ${num} `, { bg: col, fg: C.ink, b: true }), S(' '), S(label, { fg: col, b: true }), S(' ')], [S(' ' + right, { fg: C.dim })], '·', { fg: C.rule })
+    bigSec(
+      W,
+      label,
+      col,
+      T.bg,
+      [S(` ${num} `, { bg: col, fg: C.ink, b: true }), S(' ')],
+      right ? [S(right, { fg: C.dim })] : [],
+      lr(W, [S(` ${num} `, { bg: col, fg: C.ink, b: true }), S(' '), S(label, { fg: col, b: true }), S(' ')], [S(' ' + right, { fg: C.dim })], '·', { fg: C.rule }),
+    )
 
   if (n > 0) {
     if (narrow) {
@@ -213,7 +274,7 @@ function hiscore(c: Ctx): Look {
       rows.push(line(W, [sprite[3]!, S('  '), S('TAB TO PICK · ENTER TO OPEN', { fg: blink(c, C.lemon, C.dim), b: true })]))
     }
     rows.push(line(W, []))
-    rows.push(sec(1, 'NEEDS YOU', C.pink, String(n)))
+    rows.push(...sec(1, 'NEEDS YOU', C.pink, String(n)))
     const tagCol: Record<NeedKind, string> = { approve: C.pink, question: C.pink, failed: C.red, finished: C.lemon }
     const tw = narrow ? 4 : 8
     const indent = ' '.repeat(tw + 4)
@@ -229,7 +290,7 @@ function hiscore(c: Ctx): Look {
             S(' '),
             S(' ' + pad(tagOf(c, it.kind), tw), it.kind === 'finished' ? { fg: col, b: true } : { bg: col, fg: C.ink, b: true }),
             S(' '),
-            S(fit(it.title, W - tw - 4), { fg: sel ? '#FFFFFF' : T.fg, b: sel }),
+            S(fit(it.title, W - tw - 4), { fg: sel ? '#FFFFFF' : T.fg, b: true }),
           ],
           [S(indent)],
           { fg: C.lemon, b: true },
@@ -248,7 +309,7 @@ function hiscore(c: Ctx): Look {
   }
 
   rows.push(line(W, []))
-  rows.push(sec(2, 'READY', C.mint, narrow ? String(snap.ready.prs.length) : `${snap.ready.prs.length} open, not merged`))
+  rows.push(...sec(2, 'READY', C.mint, narrow ? String(snap.ready.prs.length) : `${snap.ready.prs.length} open, not merged`))
   const msg = readyMessage(c)
   if (msg) rows.push(line(W, [S('  '), S(fit(msg, W - 2), { fg: C.dim })]))
   snap.ready.prs.forEach((p, i) => {
@@ -267,7 +328,7 @@ function hiscore(c: Ctx): Look {
   })
 
   rows.push(line(W, []))
-  rows.push(sec(3, 'RUNNING', C.cyan, String(snap.running.length)))
+  rows.push(...sec(3, 'RUNNING', C.cyan, String(snap.running.length)))
   if (snap.running.length === 0) rows.push(line(W, [S('  '), S('No agents running.', { fg: C.dim })]))
   snap.running.forEach((r, i) => {
     rows.push(
@@ -276,7 +337,7 @@ function hiscore(c: Ctx): Look {
   })
 
   rows.push(line(W, []))
-  rows.push(sec(4, 'TODAY', C.lemon, ''))
+  rows.push(...sec(4, 'TODAY', C.lemon, ''))
   rows.push(line(W, [S('  '), S(todayText(c), { fg: C.dim })]))
   rows.push(...skillsRows(c, [S('  ')], C.lemon, C.dim))
   rows.push(line(W, []))
@@ -329,11 +390,19 @@ function halo(c: Ctx): Look {
   }
 
   const sec = (label: string, col: string, count: string) =>
-    lr(W, [S('▸ ', { fg: col }), S(label, { fg: col, b: true }), S(' [' + count + '] ', { fg: C.dim })], [], '─', { fg: C.rail })
+    bigSec(
+      W,
+      label,
+      col,
+      T.bg,
+      [S('▸ ', { fg: col })],
+      [S('[' + count + ']', { fg: C.dim })],
+      lr(W, [S('▸ ', { fg: col }), S(label, { fg: col, b: true }), S(' [' + count + '] ', { fg: C.dim })], [], '─', { fg: C.rail }),
+    )
 
   if (n > 0) {
     rows.push(line(W, []))
-    rows.push(sec('NEEDS YOU', C.alert, two(n)))
+    rows.push(...sec('NEEDS YOU', C.alert, two(n)))
     const kc: Record<NeedKind, string> = { approve: C.alert, question: C.alert, failed: C.amber, finished: C.green }
     const tw = narrow ? 4 : 8
     snap.needs.forEach((it, i) => {
@@ -351,7 +420,7 @@ function halo(c: Ctx): Look {
             S(' '),
             S(pad(tagOf(c, it.kind), tw), s ? { bg: col, fg: C.ink, b: true } : { fg: col, b: true }),
             S(' '),
-            S(fit(it.title, W - tw - 4), { fg: C.white, b: s }),
+            S(fit(it.title, W - tw - 4), { fg: C.white, b: true }),
           ],
           [edge, S(' └ ', { fg: C.rail })],
           { fg: C.cyan, b: true },
@@ -362,7 +431,7 @@ function halo(c: Ctx): Look {
   }
 
   rows.push(line(W, []))
-  rows.push(sec('READY', C.green, two(snap.ready.prs.length)))
+  rows.push(...sec('READY', C.green, two(snap.ready.prs.length)))
   const msg = readyMessage(c)
   if (msg) rows.push(line(W, [S('  '), S(fit(msg, W - 2), { fg: C.dim })]))
   const segs = narrow ? 5 : 10
@@ -381,7 +450,7 @@ function halo(c: Ctx): Look {
   })
 
   rows.push(line(W, []))
-  rows.push(sec('RUNNING', C.cyan, two(snap.running.length)))
+  rows.push(...sec('RUNNING', C.cyan, two(snap.running.length)))
   if (snap.running.length === 0) rows.push(line(W, [S('  '), S('No agents running.', { fg: C.dim })]))
   snap.running.forEach((r, i) => {
     rows.push(
@@ -390,7 +459,7 @@ function halo(c: Ctx): Look {
   })
 
   rows.push(line(W, []))
-  rows.push(sec('TODAY', C.dim, '··'))
+  rows.push(...sec('TODAY', C.dim, '··'))
   rows.push(
     line(W, [S('  '), S('guard ', { fg: C.dim }), S(`${snap.today.blocked} blocked`, { fg: C.amber }), S(` · ${snap.today.asked} asked · ${snap.today.runs} runs`, { fg: C.dim })]),
   )
@@ -427,6 +496,8 @@ function metro(c: Ctx): Look {
   const rows: Row[] = []
   const n = snap.needs.length
   const badge = (l: string, col: string) => S(' ' + l + ' ', { bg: col, fg: C.ink, b: true })
+  const sec = (l: string, col: string, word: string, info: string) =>
+    bigSec(W, word, col, T.bg, [badge(l, col), S(' ')], info ? [S(info, { fg: C.dim })] : [], line(W, [badge(l, col), S(' ' + word, { fg: T.fg, b: true }), S(info ? '  ' + info : '', { fg: C.dim })]))
 
   rows.push(lr(W, [S(' ◉ NEEDS YOU', { bg: C.sign, fg: C.ink, b: true })], [S(narrow ? `${n} stops ` : `${n} stops · ${clock(c.now)} `, { bg: C.sign, fg: C.signDim })], ' ', { bg: C.sign }))
   const q = W / 4
@@ -434,7 +505,7 @@ function metro(c: Ctx): Look {
   rows.push(line(W, []))
 
   if (n > 0) {
-    rows.push(line(W, [badge('N', C.red), S(' NEEDS YOU', { fg: T.fg, b: true }), S(`  line N · ${n} stop${n === 1 ? '' : 's'}`, { fg: C.dim })]))
+    rows.push(...sec('N', C.red, 'NEEDS YOU', `${n} stop${n === 1 ? '' : 's'}`))
     const kc: Record<NeedKind, string> = { approve: C.red, question: C.red, failed: C.orange, finished: C.white }
     const start = rows.length
     const rail = S(' ┃', { fg: C.red })
@@ -470,7 +541,7 @@ function metro(c: Ctx): Look {
   }
 
   rows.push(line(W, []))
-  rows.push(line(W, [badge('R', C.green), S(' READY', { fg: T.fg, b: true }), S('  line R · not merged', { fg: C.dim })]))
+  rows.push(...sec('R', C.green, 'READY', 'not merged'))
   const msg = readyMessage(c)
   if (msg) rows.push(line(W, [S(' ╹', { fg: C.green }), S('  '), S(fit(msg, W - 4), { fg: C.dim })]))
   snap.ready.prs.forEach((p, i) => {
@@ -485,7 +556,7 @@ function metro(c: Ctx): Look {
 
   rows.push(line(W, []))
   const a = snap.running.length
-  rows.push(line(W, [badge('A', C.blue), S(' RUNNING', { fg: T.fg, b: true }), S(`  line A · ${a} agent${a === 1 ? '' : 's'}`, { fg: C.dim })]))
+  rows.push(...sec('A', C.blue, 'RUNNING', `${a} agent${a === 1 ? '' : 's'}`))
   const railLen = a + 1
   // the train moves one stop every 0.4 s while agents run; parked otherwise
   const train = a > 0 && c.motion ? Math.floor((c.frame * 250) / 400) % railLen : -1
@@ -496,7 +567,7 @@ function metro(c: Ctx): Look {
   rows.push(line(W, [S(' '), railCell(a, true), S('  '), S(a === 0 ? 'No agents running.' : '', { fg: C.dim })]))
 
   rows.push(line(W, []))
-  rows.push(line(W, [badge('T', C.grey), S(' TODAY', { fg: T.fg, b: true })]))
+  rows.push(...sec('T', C.grey, 'TODAY', ''))
   rows.push(line(W, [S(' ╹', { fg: C.grey }), S('  '), S(fit(todayText(c), W - 4), { fg: C.dim })]))
   rows.push(...skillsRows(c, [S('    ')], C.white, C.dim))
   rows.push(line(W, []))
@@ -541,10 +612,14 @@ function thermal(c: Ctx): Look {
   rows.push(lr(W, [S(narrow ? '-18h' : '-24h', { fg: C.dim })], [S('activity · now', { fg: C.dim })]))
   rows.push(line(W, []))
 
-  const sec = (label: string, col: string, right: string) => lr(W, [S(label, { fg: col, b: true })], [S(right, { fg: C.dim })])
+  const sec = (label: string, col: string, right: string) => {
+    const [word = label, ...rest] = label.split(' · ')
+    const note = [rest.join(' · '), right].filter(Boolean).join('  ')
+    return bigSec(W, word, col, T.bg, [], note ? [S(note, { fg: C.dim })] : [], lr(W, [S(label, { fg: col, b: true })], [S(right, { fg: C.dim })]))
+  }
 
   if (n > 0) {
-    rows.push(sec('HOT · needs you', C.yellow, String(n)))
+    rows.push(...sec('HOT · needs you', C.yellow, String(n)))
     const kc: Record<NeedKind, [string, string]> = {
       approve: [C.white, C.yellow],
       question: [C.yellow, C.orange],
@@ -563,7 +638,7 @@ function thermal(c: Ctx): Look {
             S('██', { fg: sel ? blink(c, C.white, C.yellow) : hot }),
             S(' '),
             S(pad(tagOf(c, it.kind).toLowerCase(), tw), { fg: hot, b: true }),
-            S(fit(it.title, W - tw - 3), { fg: sel ? '#FFFFFF' : T.fg, b: sel }),
+            S(fit(it.title, W - tw - 3), { fg: sel ? '#FFFFFF' : T.fg, b: true }),
           ],
           [S('██', { fg: cool }), S(' '.repeat(tw + 1))],
           { fg: C.white, b: true },
@@ -578,7 +653,7 @@ function thermal(c: Ctx): Look {
   }
 
   rows.push(line(W, []))
-  rows.push(sec(narrow ? 'WARM · ready' : 'WARM · ready, not merged', C.magenta, String(snap.ready.prs.length)))
+  rows.push(...sec(narrow ? 'WARM · ready' : 'WARM · ready, not merged', C.magenta, String(snap.ready.prs.length)))
   const msg = readyMessage(c)
   if (msg) rows.push(line(W, [S('▐▌', { fg: C.magenta }), S(' '), S(fit(msg, W - 3), { fg: C.dim })]))
   snap.ready.prs.forEach((p, i) => {
@@ -594,7 +669,7 @@ function thermal(c: Ctx): Look {
   })
 
   rows.push(line(W, []))
-  rows.push(sec('COOL · running', C.blue, String(snap.running.length)))
+  rows.push(...sec('COOL · running', C.blue, String(snap.running.length)))
   if (snap.running.length === 0) rows.push(line(W, [S('▕▏', { fg: C.blue }), S(' '), S('No agents running.', { fg: C.dim })]))
   snap.running.forEach((r, i) => {
     rows.push(
@@ -603,7 +678,8 @@ function thermal(c: Ctx): Look {
   })
 
   rows.push(line(W, []))
-  rows.push(line(W, [S('TODAY ', { fg: C.dim, b: true }), S(fit(todayText(c), W - 6), { fg: C.dim })]))
+  rows.push(...sec('TODAY', C.dim, ''))
+  rows.push(line(W, [S(fit(todayText(c), W), { fg: C.dim })]))
   rows.push(...skillsRows(c, [S('      ')], C.yellow, C.dim))
   rows.push(line(W, []))
   rows.push(

@@ -24,7 +24,9 @@ Every item is a level to clear; an empty list says **STAGE CLEAR**.
 ██████████
  ██▀▀▀▀▀▀   TAB TO PICK · ENTER TO OPEN
 
- 1  NEEDS YOU ································ 4
+    █▀▄ █▀▀ █▀▀ █▀▄ ▄▀▀  █ █ ▄▀▄ █ █
+ 1  █ █ █▀  █▀  █ █  ▀▄   █  █ █ █ █           4
+    ▀ ▀ ▀▀▀ ▀▀▀ ▀▀  ▀▀    ▀   ▀  ▀▀▀
    APPROVE  This push goes to main.
             guard · demo-app · now
 
@@ -37,19 +39,26 @@ Every item is a level to clear; an empty list says **STAGE CLEAR**.
    DONE     The report is ready.
             Report writer · notes · 18m
 
- 2  READY ··················· 3 open, not merged
+    █▀▄ █▀▀ ▄▀▄ █▀▄ █ █
+ 2  █▀▄ █▀  █▀█ █ █  █        3 open, not merged
+    ▀ ▀ ▀▀▀ ▀ ▀ ▀▀   ▀
   #12  parser        Add a parser        ✓ 20/20
   #42  app           Fix the streak cou… × 14/16
   #7   site          New header          ◐  6/11
 
- 3  RUNNING ·································· 2
+    █▀▄ █ █ █▀▄ █▀▄ ▀█▀ █▀▄ ▄▀▀
+ 3  █▀▄ █ █ █ █ █ █  █  █ █ █ █                2
+    ▀ ▀ ▀▀▀ ▀ ▀ ▀ ▀ ▀▀▀ ▀ ▀  ▀▀
   ◐ Explore        demo-app                  12m
   ◐ reviewer       notes                      3m
 
- 4  TODAY ·····································
+    ▀█▀ ▄▀▄ █▀▄ ▄▀▄ █ █
+ 4   █  █ █ █ █ █▀█  █
+     ▀   ▀  ▀▀  ▀ ▀  ▀
   blocked 2 · asked 3 · runs 9
 
-ctrl+x tab: panel · esc: chat             k: key
+t: design  r: refresh                     k: key
+alt+n: panel · esc: chat
 ```
 
 ### Halo: a heads-up display
@@ -62,7 +71,9 @@ Corner brackets, a reticle and a threat meter that fills with each waiting item;
   ▀▄▄▄▄▀   link ok · synced just now
 └─                                            ─┘
 
-▸ NEEDS YOU [04] ───────────────────────────────
+  █▀▄ █▀▀ █▀▀ █▀▄ ▄▀▀  █ █ ▄▀▄ █ █
+▸ █ █ █▀  █▀  █ █  ▀▄   █  █ █ █ █          [04]
+  ▀ ▀ ▀▀▀ ▀▀▀ ▀▀  ▀▀    ▀   ▀  ▀▀▀
  ◉ APPROVE  This push goes to main.
   └ guard · demo-app · now
 
@@ -75,7 +86,9 @@ Corner brackets, a reticle and a threat meter that fills with each waiting item;
  ○ DONE     The report is ready.
   └ Report writer · notes · 18m
 
-▸ READY [03] ───────────────────────────────────
+  █▀▄ █▀▀ ▄▀▄ █▀▄ █ █
+▸ █▀▄ █▀  █▀█ █ █  █                        [03]
+  ▀ ▀ ▀▀▀ ▀ ▀ ▀▀   ▀
   parser #12        ▰▰▰▰▰▰▰▰▰▰            20/20
    └ Add a parser · not merged
 
@@ -85,14 +98,19 @@ Corner brackets, a reticle and a threat meter that fills with each waiting item;
   site #7           ▰▰▰▰▰▱▱▱▱▱             6/11
    └ New header · not merged
 
-▸ RUNNING [02] ─────────────────────────────────
+  █▀▄ █ █ █▀▄ █▀▄ ▀█▀ █▀▄ ▄▀▀
+▸ █▀▄ █ █ █ █ █ █  █  █ █ █ █               [02]
+  ▀ ▀ ▀▀▀ ▀ ▀ ▀ ▀ ▀▀▀ ▀ ▀  ▀▀
   ⠋ Explore        demo-app                 12m
   ⠋ reviewer       notes                     3m
 
-▸ TODAY [··] ───────────────────────────────────
+  ▀█▀ ▄▀▄ █▀▄ ▄▀▄ █ █
+▸  █  █ █ █ █ █▀█  █                        [··]
+   ▀   ▀  ▀▀  ▀ ▀  ▀
   guard 2 blocked · 3 asked · 9 runs
 
-ctrl+x tab: panel · esc: chat             k: key
+t: design  r: refresh                     k: key
+alt+n: panel · esc: chat
 ```
 
 ### Metro: a transit map
@@ -102,7 +120,9 @@ Each section is a coloured line, each item a stop, and running agents are a trai
  ◉ NEEDS YOU                    4 stops · 14:02
 ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
 
- N  NEEDS YOU  line N · 4 stops
+    █▀▄ █▀▀ █▀▀ █▀▄ ▄▀▀  █ █ ▄▀▄ █ █
+ N  █ █ █▀  █▀  █ █  ▀▄   █  █ █ █ █     4 stops
+    ▀ ▀ ▀▀▀ ▀▀▀ ▀▀  ▀▀    ▀   ▀  ▀▀▀
  ●  This push goes to main.
  ┃  guard · demo-app · now
  ┃
@@ -115,20 +135,27 @@ Each section is a coloured line, each item a stop, and running agents are a trai
  ○  The report is ready.
  ╹  Report writer · notes · 18m
 
- R  READY  line R · not merged
+    █▀▄ █▀▀ ▄▀▄ █▀▄ █ █
+ R  █▀▄ █▀  █▀█ █ █  █                not merged
+    ▀ ▀ ▀▀▀ ▀ ▀ ▀▀   ▀
  ┃  #12  parser        Add a parser      ✓ 20/20
  ┃  #42  app           Fix the streak …  × 14/16
  ╹  #7   site          New header        ◌  6/11
 
- A  RUNNING  line A · 2 agents
+    █▀▄ █ █ █▀▄ █▀▄ ▀█▀ █▀▄ ▄▀▀
+ A  █▀▄ █ █ █ █ █ █  █  █ █ █ █         2 agents
+    ▀ ▀ ▀▀▀ ▀ ▀ ▀ ▀ ▀▀▀ ▀ ▀  ▀▀
  ┃  Explore        demo-app                  12m
  ┃  reviewer       notes                      3m
  ╹
 
- T  TODAY
+    ▀█▀ ▄▀▄ █▀▄ ▄▀▄ █ █
+ T   █  █ █ █ █ █▀█  █
+     ▀   ▀  ▀▀  ▀ ▀  ▀
  ╹  blocked 2 · asked 3 · runs 9
 
-ctrl+x tab: panel · esc: chat             k: key
+t: design  r: refresh                     k: key
+alt+n: panel · esc: chat
 ```
 
 ### Thermal: a heat camera
@@ -140,7 +167,9 @@ NEEDS YOU  core 4°         hot 4  warm 3  cool 2
 ▄▄▄▄▄▄█▄████████▄▄▄▄▄▄█▄████████▄▄▄▄▄▄█▄████████
 -24h                              activity · now
 
-HOT · needs you                                4
+█ █ ▄▀▄ ▀█▀
+█▀█ █ █  █                          needs you  4
+▀ ▀  ▀   ▀
 ██ approve  This push goes to main.
 ██          guard · demo-app · now
 
@@ -153,18 +182,26 @@ HOT · needs you                                4
 ██ done     The report is ready.
 ██          Report writer · notes · 18m
 
-WARM · ready, not merged                       3
+█ █ ▄▀▄ █▀▄ █▄█
+███ █▀█ █▀▄ █▀█             ready, not merged  3
+▀ ▀ ▀ ▀ ▀ ▀ ▀ ▀
 ▐▌ #12  parser        Add a parser       ✓ 20/20
 ▐▌ #42  app           Fix the streak co… × 14/16
 ▐▌ #7   site          New header         ⠋  6/11
 
-COOL · running                                 2
+▄▀▀ ▄▀▄ ▄▀▄ █
+█   █ █ █ █ █                         running  2
+ ▀▀  ▀   ▀  ▀▀▀
 ▕▏ ⠋ Explore        demo-app                 12m
 ▕▏ ⠋ reviewer       notes                     3m
 
-TODAY blocked 2 · asked 3 · runs 9
+▀█▀ ▄▀▄ █▀▄ ▄▀▄ █ █
+ █  █ █ █ █ █▀█  █
+ ▀   ▀  ▀▀  ▀ ▀  ▀
+blocked 2 · asked 3 · runs 9
 
-ctrl+x tab: panel · esc: chat             k: key
+t: design  r: refresh                     k: key
+alt+n: panel · esc: chat
 ```
 
 ## Install
@@ -188,26 +225,30 @@ In the desktop app, where `/plugin` does not run: click + next to the prompt box
 ## Use
 
 - The pane opens by itself beside the chat when the terminal is wide enough (Claude Code docks it in fullscreen mode). Type `/needs-you` to open it at any width and give it the keyboard.
-- **Moving between the chat and the panel:** `ctrl+x tab` gives the panel the keyboard and `esc` gives it back to the chat. These are Claude Code's own keys; the panel shows them on its bottom line.
-- **Tab** moves between items. **Enter** on an item opens its details; Enter again closes them. One item is open at a time.
+- **Moving between the chat and the panel:** `alt+n` opens the panel and gives it the keyboard (with the key binding below); `esc` gives the keyboard back to the chat. The panel shows this on its bottom line.
+- **Tab** moves between items and buttons. **Enter** on an item opens its details; Enter again closes them. One item is open at a time.
 - The open item has **o** (open or close its details) and **x** (skip it). Skipped items stay hidden in later sessions. With no item picked, `x` does nothing.
-- The small, dim, underlined **key** button (or **k**) opens a short legend: what each colour and marker means in the current look, and the switches: **t** design, **m** motion on or off (Reduce motion), **r** refresh. These three work while the key is open. Press **key** again to close it; it stays open or closed in later sessions.
+- The bottom bar has small **design** (`t`) and **refresh** (`r`) buttons, and a dim, underlined **key** button (`k`). The key opens a short legend: what each colour and marker means in the current look, how the buttons work, and the **motion** switch (`m`, Reduce motion). Press **key** again to close it; it stays open or closed in later sessions.
 - When skills changed today, Today shows a button such as **+3 skills**; press it to list their names.
 
-The keys work while the pane has the keyboard (after `/needs-you`, a click on the pane, or `ctrl+x tab`).
+The letter keys work while the pane has the keyboard.
 
-### A one-key shortcut to the panel (optional)
+### The alt+n key binding
 
-A mod cannot add a key combination of its own; Claude Code reads those from `~/.claude/keybindings.json`. To reach the panel with one combination instead of `ctrl+x tab`, bind Claude Code's own `abovePrompt:focus` action, for example to `alt+n` (no Claude Code or Windows Terminal default uses it):
+A mod cannot add a key combination of its own; Claude Code reads those from `~/.claude/keybindings.json`. This binding makes `alt+n` run `/needs-you`, which opens the pane and gives it the keyboard (Claude Code grants that only while the prompt is empty):
 
 ```json
 {
   "$schema": "https://www.schemastore.org/claude-code-keybindings.json",
-  "bindings": [{ "context": "Chat", "bindings": { "alt+n": "abovePrompt:focus" } }]
+  "bindings": [{ "context": "Chat", "bindings": { "alt+n": "command:needs-you" } }]
 }
 ```
 
-Merge it into the file if you already have one. `esc` still takes you back to the chat.
+Merge it into the file if you already have one. No Claude Code or Windows Terminal default uses `alt+n`. Without it, Claude Code's own `ctrl+x tab` moves the keyboard to the band above the prompt first and to each open pane on the next presses.
+
+### Text size
+
+A terminal draws one font size for the whole window, so the panel cannot draw some text bigger than the rest. Section names are drawn in big pixel letters instead, item titles are bold, and items have room around them. To make everything bigger, use your terminal's zoom (`ctrl+=` in Windows Terminal), which enlarges the chat too.
 
 ## Where the data comes from
 

@@ -136,22 +136,22 @@ for (const theme of THEMES) {
 test('the design button cycles the look and stores the choice', async ($, on) => {
   const held = store(on)
   on('ui.open', () => ({ value: { isPlaced: true } }))
-  seed(on, { snapshot: SAMPLE, reduceMotion: true, isKeyOpen: true })
+  seed(on, { snapshot: SAMPLE, reduceMotion: true })
   const ui = await $.ui.mount(paneAt(60))
-  expect(await ui.find({ type: 'Text', text: /DESIGN ▸ HI-SCORE/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /^design$/ })).toBeDefined()
   await ui.press({ key: 'design' })
-  expect(await ui.find({ type: 'Text', text: /DESIGN ▸ HALO/ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /N E E D S/ })).toBeDefined()
   expect(held.theme).toBe('halo')
-  for (const name of ['METRO', 'THERMAL', 'HI-SCORE']) {
+  for (const [theme, head] of [['metro', /◉ NEEDS YOU/], ['thermal', /core/], ['hiscore', /^NEEDS YOU$/]] as const) {
     await ui.press({ key: 'design' })
-    expect(await ui.find({ type: 'Text', text: new RegExp(`DESIGN ▸ ${name}`) })).toBeDefined()
+    expect(held.theme).toBe(theme)
+    expect(await ui.find({ type: 'Text', text: head })).toBeDefined()
   }
   await ui.unmount()
 })
 
 test('a stored look is used when the next session starts', async ($, on) => {
-  store(on, { theme: 'thermal', reduceMotion: true, keyOpen: true, since: 1 })
+  store(on, { theme: 'thermal', reduceMotion: true, since: 1 })
   mock.clock(on, { now: NOW })
   on('session.start', (_, e) => ({ cwd: e.cwd }))
   on('command.register', () => ({ value: { command: 'needs-you' } }))
@@ -159,7 +159,7 @@ test('a stored look is used when the next session starts', async ($, on) => {
   on('ui.open', () => ({ value: { isPlaced: true } }))
   await $.session.start({ cwd: '/', surface: 'terminal', isInteractive: true })
   const ui = await $.ui.mount(paneAt(60))
-  expect(await ui.find({ type: 'Text', text: /DESIGN ▸ THERMAL/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /core/ })).toBeDefined()
   await ui.unmount()
 })
 
@@ -167,9 +167,9 @@ test('the motion button turns motion off and stores it', async ($, on) => {
   const held = store(on)
   seed(on, { snapshot: SAMPLE, isKeyOpen: true })
   const ui = await $.ui.mount(paneAt(60))
-  expect(await ui.find({ type: 'Text', text: /MOTION ON/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /^motion on$/ })).toBeDefined()
   await ui.press({ key: 'motion' })
-  expect(await ui.find({ type: 'Text', text: /MOTION OFF/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /^motion off$/ })).toBeDefined()
   expect(held.reduceMotion).toBe(true)
   await ui.unmount()
 })
@@ -220,6 +220,9 @@ test('only one item is open at a time', async ($, on) => {
   await ui.unmount()
 })
 
+/** Rows of pixel art in each look's own header, at 48 and at 36 columns. */
+const HEADER_PX: Record<ThemeId, [number, number]> = { hiscore: [4, 0], halo: [3, 0], metro: [1, 1], thermal: [2, 2] }
+
 const LEGEND: Record<ThemeId, RegExp> = {
   hiscore: /question or approval/,
   halo: /threat: items waiting/,
@@ -240,11 +243,11 @@ for (const theme of THEMES) {
         expect(held.keyOpen).toBe(true)
       }
       expect(await ui.find({ type: 'Text', text: LEGEND[theme] })).toBeDefined()
-      expect(await ui.find({ key: 'design' })).toBeDefined()
       expect(await ui.find({ key: 'motion' })).toBeDefined()
-      expect(await ui.find({ key: 'refresh' })).toBeDefined()
-      expect(await ui.find({ type: 'Text', text: /o open · x skip · k key/ })).toBeDefined()
-      expect(await ui.find({ type: 'Text', text: /^  ctrl\+x tab: panel · esc: chat/ })).toBeDefined()
+      expect(await ui.find({ type: 'Text', text: /press a button, or its letter/ })).toBeDefined()
+      expect(await ui.find({ type: 'Text', text: /tab moves · enter opens/ })).toBeDefined()
+      expect(await ui.find({ type: 'Text', text: /o open · x skip/ })).toBeDefined()
+      expect(await ui.find({ type: 'Text', text: /^  alt\+n: panel · esc: chat/ })).toBeDefined()
       await ui.unmount()
     }
     const ui = await $.ui.mount(paneAt(60))
@@ -315,13 +318,22 @@ for (const theme of THEMES) {
       for (const [, i] of titles.slice(1)) expect(rowText(look.rows[i - 1]!).replace(/[ ┃]/g, '')).toBe('')
     })
 
-    test(`${theme} at ${W}: the switch rows are gone; the bottom line shows the focus keys and the key button`, () => {
+    test(`${theme} at ${W}: the bottom bar holds small design and refresh buttons, the key, and the alt+n hint`, () => {
       const look = buildLook({ ...ctx(theme, W, SAMPLE), isKeyOpen: false })
-      const all = look.rows.map(r => r.segs.map(x => ('t' in x ? x.t : 'btn' in x ? `[${x.btn}]` : '')).join(''))
+      const all = look.rows.map(r => r.segs.map(x => ('t' in x ? x.t : 'btn' in x ? `[${x.btn}:${x.hotkey}:${x.segs.map(y => y.t).join('')}]` : '')).join(''))
       expect(all.some(l => /tab move|MOTION|REFRESH|DESIGN/.test(l))).toBe(false)
-      const last = all[all.length - 1]!
-      expect(last.startsWith('ctrl+x tab: panel · esc: chat')).toBe(true)
-      expect(last.endsWith('[key]')).toBe(true)
+      const bar = all[all.length - 2]!
+      expect(bar.startsWith('[design:t:design]  [refresh:r:refresh]')).toBe(true)
+      expect(bar.endsWith('[key:k:key]')).toBe(true)
+      expect(all[all.length - 1]!.trimEnd()).toBe('alt+n: panel · esc: chat')
+    })
+
+    test(`${theme} at ${W}: section names are drawn in big pixel letters`, () => {
+      const look = buildLook({ ...ctx(theme, W, SAMPLE), isKeyOpen: false, isSkillsOpen: false })
+      const pxRows = look.rows.filter(r => r.segs.some(x => 'px' in x)).length
+      const art = HEADER_PX[theme][W === 48 ? 0 : 1]
+      // four sections, three rows of half blocks each
+      expect(pxRows - art).toBeGreaterThanOrEqual(12)
     })
   }
 }
@@ -329,7 +341,36 @@ for (const theme of THEMES) {
 test('the focus keys line is faint', async ($, on) => {
   seed(on, { snapshot: SAMPLE, reduceMotion: true })
   const ui = await $.ui.mount(paneAt(60))
-  const focus = await ui.find({ type: 'Text', text: /^ctrl\+x tab: panel · esc: chat$/ })
+  const focus = await ui.find({ type: 'Text', text: /^alt\+n: panel · esc: chat$/ })
   expect(focus?.props).toEqual(expect.objectContaining({ color: '#6E6896' }))
   await ui.unmount()
+})
+
+test('the bottom bar buttons work without opening the key', async ($, on) => {
+  const held = store(on)
+  on('ui.open', () => ({ value: { isPlaced: true } }))
+  seed(on, { snapshot: SAMPLE, reduceMotion: true })
+  const ui = await $.ui.mount(paneAt(40))
+  await ui.press({ key: 'design' })
+  expect(held.theme).toBe('halo')
+  await ui.press({ key: 'refresh' })
+  expect(await ui.find({ key: 'refresh' })).toBeDefined()
+  await ui.unmount()
+})
+
+test('/needs-you opens the pane with the keyboard and leaves no transcript row', async ($, on) => {
+  const opened: unknown[] = []
+  store(on, { since: 1, reduceMotion: true })
+  mock.clock(on, { now: NOW })
+  on('session.start', (_, e) => ({ cwd: e.cwd }))
+  on('command.register', () => ({ value: { command: 'needs-you' } }))
+  on('session.id', () => ({ value: 'session-1' }))
+  on('ui.open', (_, e) => {
+    opened.push(e)
+    return { value: { isPlaced: true } }
+  })
+  await $.session.start({ cwd: '/', surface: 'terminal', isInteractive: true })
+  const ran = await $.command.run({ command: 'needs-you', args: '', origin: { kind: 'composer' }, presentation: { isFullscreen: true, columns: 160 } })
+  expect(ran).toEqual({})
+  expect(opened[opened.length - 1]).toEqual(expect.objectContaining({ id: 'needs-you', focus: true }))
 })

@@ -307,7 +307,8 @@ export const register: Register = on => {
     lastScan = 0
     lastFileList = 0
     isShown = true
-    return { text: 'Needs You pane opened.' }
+    // no text: alt+n runs this, and each press would otherwise leave a transcript row
+    return {}
   })
 
   on('ui.close', async ($, e, next) => {
