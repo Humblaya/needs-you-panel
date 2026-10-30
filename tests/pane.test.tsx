@@ -404,6 +404,23 @@ test('big letters are two rows tall and three cells wide', () => {
     const spaces = word.split(' ').length - 1
     // 3 cells a letter, 1 between letters of a word, 2 for a space
     expect(rows[0]!.px.length).toBe(letters * 3 + (letters - 1 - spaces) + spaces * 2)
+    // letters are 3 pixels tall: the band's top half-row stays empty
+    expect(rows[0]!.px.every(([top]) => top === '#000000')).toBe(true)
+  }
+})
+
+test('every letter the headers use has its own readable shape', () => {
+  const shapes = new Map<string, string>()
+  for (const ch of 'NEDSYOURAIGTHMWCL') {
+    const [top, bottom] = bigWord(ch, '#FFFFFF', '#000000')
+    const shape = JSON.stringify([top!.px, bottom!.px])
+    // three pixels wide, something drawn in each of its three pixel rows
+    expect(top!.px.length).toBe(3)
+    expect(top!.px.some(([, b]) => b === '#FFFFFF')).toBe(true)
+    expect(bottom!.px.some(([t]) => t === '#FFFFFF')).toBe(true)
+    expect(bottom!.px.some(([, b]) => b === '#FFFFFF')).toBe(true)
+    expect(shapes.has(shape) ? `${ch} looks like ${shapes.get(shape)}` : ch).toBe(ch)
+    shapes.set(shape, ch)
   }
 })
 

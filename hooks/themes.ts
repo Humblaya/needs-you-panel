@@ -131,41 +131,42 @@ function readyMessage(c: Ctx): string | undefined {
 /** A glyph in its colour and what it means, for the key. */
 type Meaning = [glyph: string, colour: string, meaning: string]
 
-// A 3×4 pixel font for section names. A terminal draws one font size, so
+// A 3×3 pixel font for section names. A terminal draws one font size, so
 // slightly bigger letters are drawn with half blocks: each letter is 3 cells
-// wide and 2 rows tall, only a little taller than a line of text.
+// wide and 1.5 rows tall, in a 2-row band whose top half-row stays empty.
 const FONT: Record<string, string[]> = {
-  A: ['010', '101', '111', '101'],
-  C: ['011', '100', '100', '011'],
-  D: ['110', '101', '101', '110'],
-  E: ['111', '110', '100', '111'],
-  G: ['011', '100', '101', '011'],
-  H: ['101', '111', '101', '101'],
-  I: ['111', '010', '010', '111'],
-  L: ['100', '100', '100', '111'],
-  M: ['111', '111', '101', '101'],
-  N: ['110', '101', '101', '101'],
-  O: ['010', '101', '101', '010'],
-  R: ['110', '101', '110', '101'],
-  S: ['011', '100', '001', '110'],
-  T: ['111', '010', '010', '010'],
-  U: ['101', '101', '101', '111'],
-  W: ['101', '101', '111', '111'],
-  Y: ['101', '101', '010', '010'],
+  A: ['010', '111', '101'],
+  C: ['111', '100', '111'],
+  D: ['110', '101', '110'],
+  E: ['111', '110', '111'],
+  G: ['110', '101', '111'],
+  H: ['101', '111', '101'],
+  I: ['111', '010', '111'],
+  L: ['100', '100', '111'],
+  M: ['111', '111', '101'],
+  N: ['110', '101', '101'],
+  O: ['111', '101', '111'],
+  R: ['110', '110', '101'],
+  S: ['011', '010', '110'],
+  T: ['111', '010', '010'],
+  U: ['101', '101', '111'],
+  W: ['101', '111', '111'],
+  Y: ['101', '010', '010'],
 }
 
-/** A word in big pixel letters: two rows of half blocks in `colour` over `ground`. */
+/** A word in big pixel letters: two rows of half blocks in `colour` over `ground`, the top half-row empty. */
 export function bigWord(word: string, colour: string, ground: string): PxSeg[] {
-  const grid = ['', '', '', '']
+  const grid = ['', '', '']
   const chars = [...word.toUpperCase()]
   chars.forEach((ch, i) => {
     const glyph = FONT[ch]
-    for (let y = 0; y < 4; y++) {
+    for (let y = 0; y < 3; y++) {
       grid[y] += glyph ? (glyph[y] ?? '000').replace(/0/g, '.').replace(/1/g, 'x') : '..'
       if (glyph && i < chars.length - 1 && FONT[chars[i + 1] ?? ''] !== undefined) grid[y] += '.'
     }
   })
-  return pixels(grid, { x: colour }, ground)
+  // an empty half-row on top, so the 3 pixel rows fill the lower 1.5 of 2 rows
+  return pixels(['.'.repeat(grid[0]?.length ?? 0), ...grid], { x: colour }, ground)
 }
 
 /**
