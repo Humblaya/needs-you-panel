@@ -6,7 +6,7 @@ import type { Snapshot, ThemeId } from '../types'
 import type { Row } from '../hooks/cells'
 import { rowWidth } from '../hooks/cells'
 import { widthFor } from '../hooks/register'
-import { THEMES, bigWord, buildLook } from '../hooks/themes'
+import { THEMES, buildLook } from '../hooks/themes'
 
 const NOW = Date.parse('2026-01-05T12:00:00.000Z')
 
@@ -349,12 +349,14 @@ for (const theme of THEMES) {
       expect(all[all.length - 1]!.trimEnd()).toBe('alt+n: panel · esc: chat')
     })
 
-    test(`${theme} at ${W}: section names are drawn in big pixel letters`, () => {
+    test(`${theme} at ${W}: section names are sharp text, not pixel letters`, () => {
       const look = buildLook({ ...ctx(theme, W, SAMPLE), isKeyOpen: false, isSkillsOpen: false })
       const pxRows = look.rows.filter(r => r.segs.some(x => 'px' in x)).length
-      const art = HEADER_PX[theme][W === 48 ? 0 : 1]
-      // four sections, exactly two rows of half blocks each: only a little bigger than one row
-      expect(pxRows - art).toBe(8)
+      // only the look's own header art is drawn in half blocks
+      expect(pxRows).toBe(HEADER_PX[theme][W === 48 ? 0 : 1])
+      const text = look.rows.map(r => r.segs.map(x => ('t' in x ? x.t : '')).join(''))
+      // four sections, each one row: a colour bar then bold spaced capitals
+      expect(text.filter(l => /█▌ [A-Z](?: {1,3}[A-Z])+/.test(l)).length).toBe(4)
     })
   }
 }
@@ -394,34 +396,6 @@ test('/needs-you opens the pane with the keyboard and leaves no transcript row',
   const ran = await $.command.run({ command: 'needs-you', args: '', origin: { kind: 'composer' }, presentation: { isFullscreen: true, columns: 160 } })
   expect(ran).toEqual({})
   expect(opened[opened.length - 1]).toEqual(expect.objectContaining({ id: 'needs-you', focus: true }))
-})
-
-test('big letters are two rows tall and three cells wide', () => {
-  for (const word of ['NEEDS YOU', 'READY', 'RUNNING', 'TODAY', 'HOT', 'WARM', 'COOL']) {
-    const rows = bigWord(word, '#FFFFFF', '#000000')
-    expect(rows.length).toBe(2)
-    const letters = word.replace(/ /g, '').length
-    const spaces = word.split(' ').length - 1
-    // 3 cells a letter, 1 between letters of a word, 2 for a space
-    expect(rows[0]!.px.length).toBe(letters * 3 + (letters - 1 - spaces) + spaces * 2)
-    // letters are 3 pixels tall: the band's top half-row stays empty
-    expect(rows[0]!.px.every(([top]) => top === '#000000')).toBe(true)
-  }
-})
-
-test('every letter the headers use has its own readable shape', () => {
-  const shapes = new Map<string, string>()
-  for (const ch of 'NEDSYOURAIGTHMWCL') {
-    const [top, bottom] = bigWord(ch, '#FFFFFF', '#000000')
-    const shape = JSON.stringify([top!.px, bottom!.px])
-    // three pixels wide, something drawn in each of its three pixel rows
-    expect(top!.px.length).toBe(3)
-    expect(top!.px.some(([, b]) => b === '#FFFFFF')).toBe(true)
-    expect(bottom!.px.some(([t]) => t === '#FFFFFF')).toBe(true)
-    expect(bottom!.px.some(([, b]) => b === '#FFFFFF')).toBe(true)
-    expect(shapes.has(shape) ? `${ch} looks like ${shapes.get(shape)}` : ch).toBe(ch)
-    shapes.set(shape, ch)
-  }
 })
 
 for (const cols of [24, 30, 80]) {

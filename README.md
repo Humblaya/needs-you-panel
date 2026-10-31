@@ -24,8 +24,7 @@ Every item is a level to clear; an empty list says **STAGE CLEAR**.
 ██████████
  ██▀▀▀▀▀▀   TAB TO PICK · ENTER TO OPEN
 
-    ▄▄  ▄▄▄ ▄▄▄ ▄▄   ▄▄  ▄ ▄ ▄▄▄ ▄ ▄
- 1  █ █ ██▄ ██▄ █▄▀ ▄█    █  █▄█ █▄█           4
+ 1  █▌ N E E D S   Y O U                       4
    APPROVE  This push goes to main.
 
    ASKS     Which colour should the button be?
@@ -34,19 +33,16 @@ Every item is a level to clear; an empty list says **STAGE CLEAR**.
 
    DONE     The report is ready.
 
-    ▄▄  ▄▄▄  ▄  ▄▄  ▄ ▄
- 2  █▀▄ ██▄ █▀█ █▄▀  █        3 open, not merged
+ 2  █▌ R E A D Y              3 open, not merged
   #12  parser        Add a parser        ✓ 20/20
   #42  app           Fix the streak cou… × 14/16
   #7   site          New header          ◐  6/11
 
-    ▄▄  ▄ ▄ ▄▄  ▄▄  ▄▄▄ ▄▄  ▄▄
- 3  █▀▄ █▄█ █ █ █ █ ▄█▄ █ █ █▄█                2
+ 3  █▌ R U N N I N G                           2
   ◐ Explore        demo-app                  12m
   ◐ reviewer       notes                      3m
 
-    ▄▄▄ ▄▄▄ ▄▄   ▄  ▄ ▄
- 4   █  █▄█ █▄▀ █▀█  █
+ 4  █▌ T O D A Y
   blocked 2 · asked 3 · runs 9
 
 t: design  r: refresh                     k: key
@@ -63,8 +59,7 @@ Corner brackets, a reticle and a threat meter that fills with each waiting item;
   ▀▄▄▄▄▀   link ok · synced just now
 └─                                            ─┘
 
-  ▄▄  ▄▄▄ ▄▄▄ ▄▄   ▄▄  ▄ ▄ ▄▄▄ ▄ ▄
-▸ █ █ ██▄ ██▄ █▄▀ ▄█    █  █▄█ █▄█          [04]
+▸ █▌ N E E D S   Y O U                      [04]
  ◉ APPROVE  This push goes to main.
 
  ◉ ASKS     Which colour should the button be?
@@ -73,8 +68,7 @@ Corner brackets, a reticle and a threat meter that fills with each waiting item;
 
  ○ DONE     The report is ready.
 
-  ▄▄  ▄▄▄  ▄  ▄▄  ▄ ▄
-▸ █▀▄ ██▄ █▀█ █▄▀  █                        [03]
+▸ █▌ R E A D Y                              [03]
   parser #12        ▰▰▰▰▰▰▰▰▰▰            20/20
    └ Add a parser · not merged
 
@@ -84,13 +78,11 @@ Corner brackets, a reticle and a threat meter that fills with each waiting item;
   site #7           ▰▰▰▰▰▱▱▱▱▱             6/11
    └ New header · not merged
 
-  ▄▄  ▄ ▄ ▄▄  ▄▄  ▄▄▄ ▄▄  ▄▄
-▸ █▀▄ █▄█ █ █ █ █ ▄█▄ █ █ █▄█               [02]
+▸ █▌ R U N N I N G                          [02]
   ⠋ Explore        demo-app                 12m
   ⠋ reviewer       notes                     3m
 
-  ▄▄▄ ▄▄▄ ▄▄   ▄  ▄ ▄
-▸  █  █▄█ █▄▀ █▀█  █                        [··]
+▸ █▌ T O D A Y                              [··]
   guard 2 blocked · 3 asked · 9 runs
 
 t: design  r: refresh                     k: key
@@ -104,8 +96,7 @@ Each section is a coloured line, each item a stop, and running agents are a trai
  ◉ NEEDS YOU                    4 stops · 14:02
 ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
 
-    ▄▄  ▄▄▄ ▄▄▄ ▄▄   ▄▄  ▄ ▄ ▄▄▄ ▄ ▄
- N  █ █ ██▄ ██▄ █▄▀ ▄█    █  █▄█ █▄█     4 stops
+ N  █▌ N E E D S   Y O U                 4 stops
  ●  This push goes to main.
  ┃
  ●  Which colour should the button be?
@@ -114,20 +105,17 @@ Each section is a coloured line, each item a stop, and running agents are a trai
  ┃
  ○  The report is ready.
 
-    ▄▄  ▄▄▄  ▄  ▄▄  ▄ ▄
- R  █▀▄ ██▄ █▀█ █▄▀  █                not merged
+ R  █▌ R E A D Y                      not merged
  ┃  #12  parser        Add a parser      ✓ 20/20
  ┃  #42  app           Fix the streak …  × 14/16
  ╹  #7   site          New header        ◌  6/11
 
-    ▄▄  ▄ ▄ ▄▄  ▄▄  ▄▄▄ ▄▄  ▄▄
- A  █▀▄ █▄█ █ █ █ █ ▄█▄ █ █ █▄█         2 agents
+ A  █▌ R U N N I N G                    2 agents
  ┃  Explore        demo-app                  12m
  ┃  reviewer       notes                      3m
  ╹
 
-    ▄▄▄ ▄▄▄ ▄▄   ▄  ▄ ▄
- T   █  █▄█ █▄▀ █▀█  █
+ T  █▌ T O D A Y
  ╹  blocked 2 · asked 3 · runs 9
 
 t: design  r: refresh                     k: key
@@ -143,8 +131,7 @@ NEEDS YOU  core 4°         hot 4  warm 3  cool 2
 ▄▄▄▄▄▄█▄████████▄▄▄▄▄▄█▄████████▄▄▄▄▄▄█▄████████
 -24h                              activity · now
 
-▄ ▄ ▄▄▄ ▄▄▄
-█▀█ █▄█  █                          needs you  4
+█▌ H O T                            needs you  4
 ██ approve  This push goes to main.
 
 ██ asks     Which colour should the button be?
@@ -153,19 +140,16 @@ NEEDS YOU  core 4°         hot 4  warm 3  cool 2
 
 ██ done     The report is ready.
 
-▄ ▄  ▄  ▄▄  ▄▄▄
-███ █▀█ █▀▄ █▀█             ready, not merged  3
+█▌ W A R M                  ready, not merged  3
 ▐▌ #12  parser        Add a parser       ✓ 20/20
 ▐▌ #42  app           Fix the streak co… × 14/16
 ▐▌ #7   site          New header         ⠋  6/11
 
-▄▄▄ ▄▄▄ ▄▄▄ ▄
-█▄▄ █▄█ █▄█ █▄▄                       running  2
+█▌ C O O L                            running  2
 ▕▏ ⠋ Explore        demo-app                 12m
 ▕▏ ⠋ reviewer       notes                     3m
 
-▄▄▄ ▄▄▄ ▄▄   ▄  ▄ ▄
- █  █▄█ █▄▀ █▀█  █
+█▌ T O D A Y
 blocked 2 · asked 3 · runs 9
 
 t: design  r: refresh                     k: key
@@ -216,7 +200,7 @@ Merge it into the file if you already have one. No Claude Code or Windows Termin
 
 ### Text size
 
-A terminal draws one font size for the whole window, so the panel cannot draw some text bigger than the rest. Section names are drawn in big pixel letters instead, item titles are bold, and items have room around them. To make everything bigger, use your terminal's zoom (`ctrl+=` in Windows Terminal), which enlarges the chat too.
+A terminal draws one font size for the whole window, so the panel cannot draw some text bigger than the rest. Section names are drawn in bold spaced capitals after a colour bar instead (in the terminal's own font, so they stay sharp at any display scaling), item titles are bold, and items have room around them. To make everything bigger, use your terminal's zoom (`ctrl+=` in Windows Terminal), which enlarges the chat too.
 
 ## Where the data comes from
 
