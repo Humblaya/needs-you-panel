@@ -1,7 +1,7 @@
 // The four looks. Each builds the same sections (Needs you, Ready, Running,
 // Today) as rows of cells that fill the pane, 24 to 64 columns wide.
 import type { NeedItem, NeedKind, Pr, Snapshot, ThemeId } from '../types'
-import type { PxSeg, Row, Seg, TextSeg } from './cells'
+import type { Row, Seg, TextSeg } from './cells'
 import { S, fit, line, lr, pad, pixels, rpad, segWidth } from './cells'
 import { ageLabel } from './data'
 
@@ -131,57 +131,19 @@ function readyMessage(c: Ctx): string | undefined {
 /** A glyph in its colour and what it means, for the key. */
 type Meaning = [glyph: string, colour: string, meaning: string]
 
-// A 3×3 pixel font for section names. A terminal draws one font size, so
-// slightly bigger letters are drawn with half blocks: each letter is 3 cells
-// wide and 1.5 rows tall, in a 2-row band whose top half-row stays empty.
-const FONT: Record<string, string[]> = {
-  A: ['010', '111', '101'],
-  C: ['111', '100', '111'],
-  D: ['110', '101', '110'],
-  E: ['111', '110', '111'],
-  G: ['110', '101', '111'],
-  H: ['101', '111', '101'],
-  I: ['111', '010', '111'],
-  L: ['100', '100', '111'],
-  M: ['111', '111', '101'],
-  N: ['110', '101', '101'],
-  O: ['111', '101', '111'],
-  R: ['110', '110', '101'],
-  S: ['011', '010', '110'],
-  T: ['111', '010', '010'],
-  U: ['101', '101', '111'],
-  W: ['101', '111', '111'],
-  Y: ['101', '010', '010'],
-}
-
-/** A word in big pixel letters: two rows of half blocks in `colour` over `ground`, the top half-row empty. */
-export function bigWord(word: string, colour: string, ground: string): PxSeg[] {
-  const grid = ['', '', '']
-  const chars = [...word.toUpperCase()]
-  chars.forEach((ch, i) => {
-    const glyph = FONT[ch]
-    for (let y = 0; y < 3; y++) {
-      grid[y] += glyph ? (glyph[y] ?? '000').replace(/0/g, '.').replace(/1/g, 'x') : '..'
-      if (glyph && i < chars.length - 1 && FONT[chars[i + 1] ?? ''] !== undefined) grid[y] += '.'
-    }
-  })
-  // an empty half-row on top, so the 3 pixel rows fill the lower 1.5 of 2 rows
-  return pixels(['.'.repeat(grid[0]?.length ?? 0), ...grid], { x: colour }, ground)
-}
-
 /**
- * A section header in big letters, two rows tall: `lead` and `right` sit on
- * its lower row. Where it would not fit, `right` goes; where even the word
- * does not fit, the theme's own one-row header (`small`) is used instead.
+ * A section header in the terminal's own font, so it stays sharp at any
+ * display scaling: `lead`, a colour bar, the word in bold spaced capitals,
+ * and `right` at the far end. Where it would not fit, `right` goes; where
+ * even the word does not fit, the theme's own one-row header (`small`) is used.
  */
-function bigSec(W: number, word: string, colour: string, ground: string, lead: Seg[], right: Seg[], small: Row): Row[] {
-  const px = bigWord(word, colour, ground)
+function capsSec(W: number, word: string, colour: string, lead: Seg[], right: Seg[], small: Row): Row[] {
+  const spaced = [...word.toUpperCase()].join(' ')
+  const head = [...lead, S('█▌ ', { fg: colour }), S(spaced, { fg: colour, b: true })]
   const width = (segs: Seg[]) => segs.reduce((n, x) => n + segWidth(x), 0)
-  const pxW = px[0]?.px.length ?? 0
-  if (width(lead) + pxW > W) return [small]
-  const r = width(lead) + pxW + 1 + width(right) <= W ? right : []
-  const blank = S(' '.repeat(width(lead)))
-  return px.map((p, i) => (i === px.length - 1 ? lr(W, [...lead, p], r.length ? [S(' '), ...r] : []) : line(W, [blank, p])))
+  if (width(head) > W) return [small]
+  const r = width(head) + 1 + width(right) <= W ? right : []
+  return [lr(W, head, r.length ? [S(' '), ...r] : [])]
 }
 
 /** The keys that move between the chat and the panel: alt+n runs /needs-you (a keybinding), esc returns. */
@@ -259,11 +221,10 @@ function hiscore(c: Ctx): Look {
   const n = snap.needs.length
 
   const sec = (num: number, label: string, col: string, right: string) =>
-    bigSec(
+    capsSec(
       W,
       label,
       col,
-      T.bg,
       [S(` ${num} `, { bg: col, fg: C.ink, b: true }), S(' ')],
       right ? [S(right, { fg: C.dim })] : [],
       lr(W, [S(` ${num} `, { bg: col, fg: C.ink, b: true }), S(' '), S(label, { fg: col, b: true }), S(' ')], [S(' ' + right, { fg: C.dim })], '·', { fg: C.rule }),
@@ -397,11 +358,10 @@ function halo(c: Ctx): Look {
   }
 
   const sec = (label: string, col: string, count: string) =>
-    bigSec(
+    capsSec(
       W,
       label,
       col,
-      T.bg,
       [S('▸ ', { fg: col })],
       [S('[' + count + ']', { fg: C.dim })],
       lr(W, [S('▸ ', { fg: col }), S(label, { fg: col, b: true }), S(' [' + count + '] ', { fg: C.dim })], [], '─', { fg: C.rail }),
@@ -504,7 +464,7 @@ function metro(c: Ctx): Look {
   const n = snap.needs.length
   const badge = (l: string, col: string) => S(' ' + l + ' ', { bg: col, fg: C.ink, b: true })
   const sec = (l: string, col: string, word: string, info: string) =>
-    bigSec(W, word, col, T.bg, [badge(l, col), S(' ')], info ? [S(info, { fg: C.dim })] : [], line(W, [badge(l, col), S(' ' + word, { fg: T.fg, b: true }), S(info ? '  ' + info : '', { fg: C.dim })]))
+    capsSec(W, word, col, [badge(l, col), S(' ')], info ? [S(info, { fg: C.dim })] : [], line(W, [badge(l, col), S(' ' + word, { fg: T.fg, b: true }), S(info ? '  ' + info : '', { fg: C.dim })]))
 
   rows.push(lr(W, [S(' ◉ NEEDS YOU', { bg: C.sign, fg: C.ink, b: true })], [S(narrow ? `${n} stops ` : `${n} stops · ${clock(c.now)} `, { bg: C.sign, fg: C.signDim })], ' ', { bg: C.sign }))
   const q = Math.floor(W / 4)
@@ -622,7 +582,7 @@ function thermal(c: Ctx): Look {
   const sec = (label: string, col: string, right: string) => {
     const [word = label, ...rest] = label.split(' · ')
     const note = [rest.join(' · '), right].filter(Boolean).join('  ')
-    return bigSec(W, word, col, T.bg, [], note ? [S(note, { fg: C.dim })] : [], lr(W, [S(label, { fg: col, b: true })], [S(right, { fg: C.dim })]))
+    return capsSec(W, word, col, [], note ? [S(note, { fg: C.dim })] : [], lr(W, [S(label, { fg: col, b: true })], [S(right, { fg: C.dim })]))
   }
 
   if (n > 0) {
