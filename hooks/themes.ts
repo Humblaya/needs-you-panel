@@ -1,7 +1,7 @@
 // The four looks. Each builds the same sections (Needs you, Ready, Running,
 // Today) as rows of cells that fill the pane, 24 to 64 columns wide.
 import type { NeedItem, NeedKind, Pr, Snapshot, ThemeId } from '../types'
-import type { PxSeg, Row, Seg, TextSeg } from './cells'
+import type { Row, Seg, TextSeg } from './cells'
 import { S, fit, line, lr, pad, pixels, rpad, segWidth } from './cells'
 import { ageLabel } from './data'
 
